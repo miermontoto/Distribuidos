@@ -8,6 +8,8 @@
 #include <string.h>
 #include <signal.h>
 #include <pthread.h>
+#include <semaphore.h>
+
 
 #define PUERTO 2007
 #define MAX_LINEA 80
