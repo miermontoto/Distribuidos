@@ -12,19 +12,17 @@ int main() {
     Persona p;
     Texto t;
     Resultado r;
-    FILE *personaDat; // Fichero donde se escribirá
-    XDR operacionP;
-    XDR operacionT;
+    XDR operacion;
     char c;
-    FILE *textoDat = fopen("persona.dat", "w");
-    personaDat = fopen("datos.xdr", "w"); // Abrir para "w"rite
-    if (personaDat == NULL || textoDat == NULL) { // Comprobar errores
+    Resultado res;
+
+    FILE *file = fopen("menu.dat", "w");
+    if (file == NULL) { // Comprobar errores
         perror("Al abrir fichero");
         exit(1);
     }
-    t = "Probando";
-    xdrstdio_create(&operacionP, personaDat, XDR_ENCODE);
-    xdrstdio_create(&operacionT, textoDat, XDR_ENCODE);
+
+    xdrstdio_create(&operacion, file, XDR_ENCODE);
 
     printf("Menu:\n");
     printf("1. Entero\n");
@@ -45,6 +43,10 @@ int main() {
                 fgets(res.Resultado_u.error, 100, stdin);
                 break;
     }
+
+    xdr_Resultado(&operacion, &res);
+    xdr_destroy(&operacion);
+    fclose(file);
 
     return 0;
 }

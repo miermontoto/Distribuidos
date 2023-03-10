@@ -3,7 +3,7 @@
  * It was generated using rpcgen.
  */
 
-#include "xdr/tipos.h"
+#include "tipos.h"
 
 bool_t
 xdr_Texto (XDR *xdrs, Texto *objp)
