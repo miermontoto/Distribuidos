@@ -33,14 +33,14 @@ int main() {
 
     switch(res.caso) {
         case 1: printf("Introduce un valor entero: ");
-                scanf("%d", &res.caso);
+                scanf("%d", &res.Resultado_u.n);
                 break;
         case 2: printf("Introduce un valor real: ");
-                scanf("%f", &res.caso);
+                scanf("%f", &res.Resultado_u.x);
                 break;
         case 3: printf("Introduce un texto: ");
                 res.Resultado_u.error = malloc(sizeof(char)*100);
-                fgets(res.Resultado_u.error, 100, stdin);
+                getchar();
                 break;
     }
 

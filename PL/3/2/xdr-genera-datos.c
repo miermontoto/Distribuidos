@@ -16,8 +16,8 @@ int main() {
     XDR operacionP;
     XDR operacionT;
     char c;
-    FILE *textoDat = fopen("persona.dat", "w");
-    personaDat = fopen("datos.xdr", "w"); // Abrir para "w"rite
+    FILE *textoDat = fopen("texto.xdr", "w");
+    personaDat = fopen("persona.xdr", "w"); // Abrir para "w"rite
     if (personaDat == NULL || textoDat == NULL) { // Comprobar errores
         perror("Al abrir fichero");
         exit(1);
