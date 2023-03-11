@@ -3,11 +3,11 @@ CFLAGS=-I. -pthread
 
 all: sislog cliente
 
-sislog: # A RELLENAR DEPENDENCIAS
-	# A RELLENAR COMANDOS
+sislog: sislog.c
+	$(CC) -o sislog sislog.c cola.c util.c $(CFLAGS)
 
-cliente: # A RELLENAR DEPENDENCIAS
-	# A RELLENAR COMANDOS
+cliente: cliente.c
+	$(CC) -o cliente cliente.c $(CFLAGS)
 
 limpia:
 	-rm *.o

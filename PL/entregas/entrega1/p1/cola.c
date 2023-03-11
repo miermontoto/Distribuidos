@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cola.h"
-#include "util.c"
+#include "util.h"
 
 // El contenido de este fichero implementa las funciones de la cola.
 // Es prácticamente igual a la cola que tienes hecha de las prácticas
@@ -34,7 +34,6 @@ void inicializar_cola(Cola *cola, int tam_cola)
 void destruir_cola(Cola *cola)
 {
     free(cola -> datos);
-    check_not_null(cola -> datos, "free cola->datos");
     check_error(pthread_mutex_destroy(&(cola -> mutex_head)), "Pthread destroy mutex_head");
     check_error(pthread_mutex_destroy(&(cola -> mutex_tail)), "Pthread destroy mutex_tail");
     check_error(sem_destroy(&(cola -> num_huecos)), "Semaphore destroy num_huecos");
@@ -57,7 +56,7 @@ void insertar_dato_cola(Cola *cola, dato_cola * dato)
 }
 
 
-dato_cola * obtener_dato_cola(Cola *cola)
+dato_cola* obtener_dato_cola(Cola *cola)
 {
     dato_cola *p;
 

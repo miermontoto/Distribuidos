@@ -30,7 +30,6 @@ struct param_hilo_aten
     int num_hilo;
     int s;
 };
-
 typedef struct param_hilo_aten param_hilo_aten;
 
 // ====================================================================
@@ -46,8 +45,7 @@ static void handler(int signum); // Manejador de señal SIGINT
 // hilos trabajadores
 Cola cola_eventos;
 
-// Cola par_t* hilos_aten;en el que esperamos los mensajes
-int puerto;
+int puerto; // Cola par_t* hilos_aten;en el que esperamos los mensajes
 
 // Variable booleana que indica si el socket es orientado a conexión o no
 unsigned char es_stream = CIERTO;
@@ -105,14 +103,12 @@ char *facilities_file_names[NUMFACILITIES] = {
     "fac09.dat"
 };
 
-// mutex de exclusion a los ficheros de registro
-pthread_mutex_t mfp[NUMFACILITIES];
+pthread_mutex_t mfp[NUMFACILITIES]; // Mutex de exclusión a los ficheros de registro
 
-// Tamaño de la cola circular
-int tam_cola;
+int tam_cola; // Tamaño de la cola circular
 
 // ====================================================================
-// FUNCION handler de las señales recibidas por el hilo buque
+// Función handler de las señales recibidas por el hilo buque
 // ====================================================================
 static void handler(int signum)
 {
@@ -166,6 +162,9 @@ void* Worker(int* id)
     char* fechahora;
     time_t timeraw;
 
+    int facilidad;
+    int nivel;
+
     id_worker = *id; // Hacemos copia del parámetro recibido
     free(id);        // y liberamos la memoria reservada para él
 
@@ -178,7 +177,29 @@ void* Worker(int* id)
     // en el fichero que corresponda. Mira "cola.h"
     // para recordar la estructura dato_cola que recibe de la cola
     while (1) {
-        // TODO: Rellenar (4)
+        evt = (dato_cola*) obtener_dato_cola(&cola_eventos);
+        p_check_null(evt, "Error al sacar de la cola de sincronización");
+
+        facilidad = (int) evt -> facilidad;
+        nivel = (int) evt -> nivel;
+
+        check_error(pthread_mutex_lock(&mfp[facilidad]), "Error al bloquear el mutex");
+        fp = fopen(facilities_file_names[facilidad], "a");
+        check_null(fp, "Error al abrir el fichero de registro correspondiente");
+
+        timeraw = time(NULL);
+        fechahora = ctime(&timeraw);
+        fechahora[strlen(fechahora) - 1] = '\0';
+
+        check_error(fprintf(fp,
+            "%s:%s:%s:%s", facilities_names[facilidad], level_names[nivel], fechahora, evt -> msg),
+                "Error al escribir al mensaje de log");
+        check_error(fclose(fp), "Error al cerrar el fichero de registro correspondiente");
+
+        check_error(pthread_mutex_unlock(&mfp[facilidad]), "Error al desbloquear el mutex");
+
+        // free(evt -> msg);
+        free(evt);
     }
 }
 
@@ -212,6 +233,7 @@ void *AtencionPeticiones(param_hilo_aten *q)
         if (es_stream) // TCP
         {
             // Aceptar el cliente, leer su mensaje hasta recibirlo entero, y cerrar la conexión
+            check_error(listen(s, SOMAXCONN), "Error en el listen.");
             sock_dat = accept(s, (struct sockaddr *) &d_cliente, &l_dir);
             check_error(sock_dat, "Error en el accept.");
             recibidos = recv(sock_dat, buffer, TAMMSG, 0);
@@ -227,16 +249,27 @@ void *AtencionPeticiones(param_hilo_aten *q)
         // Una vez recibido el mensaje, es necesario separar sus partes,
         // guardarlos en la estructura adecuada, y poner esa estructura en la cola
         // de sincronización.
-        token = strtok_r(buffer, ":", &loc); // "facilidad" en token
         p = (dato_cola *) malloc(sizeof(dato_cola));
-        // TODO: complete
+        check_null(p, "Error al crear el objeto de datos del hilo");
+
+        token = strtok_r(buffer, ":", &loc); // "facilidad" en token
+        if(!valida_numero(token)) exit_error("Error en el número de facilidad");
+        if(atoi(token) >= NUMFACILITIES) exit_error("Error en el número de facilidad");
+        check_error(atoi(token), "Error en el número de facilidad");
+        p -> facilidad = *token;
 
         token = strtok_r(NULL, ":", &loc); // "nivel" en token
-        // TODO: complete
+        if(!valida_numero(token)) exit_error("Error en el número de nivel");
+        if(atoi(token) >= NUMLEVELS) exit_error("Error en el número de nivel");
+        check_error(atoi(token), "Error en el número de nivel");
+        p -> nivel = *token;
 
         token = strtok_r(NULL, ":", &loc); // "mensaje" en token
-        // TODO: complete
+        check_null(p -> msg, "Error p -> msg");
+        if(strlen(token) >= TAMMAXMSG) exit_error("Tamaño de mensaje demasiado grande");
+        strcpy(p -> msg, token);
 
+        insertar_dato_cola(&cola_eventos, p);
     }
 }
 
@@ -270,18 +303,15 @@ int main(int argc, char *argv[])
     {
         sock_pasivo = socket(AF_INET, SOCK_STREAM, 0);
         check_error(sock_pasivo, "Error al crear el socket.");
-        check_error(bind(sock_pasivo, (struct sockaddr *) &d_local, sizeof(d_local)), "Error al asignar el puerto al socket.");
-        check_error(listen(sock_pasivo, SOMAXCONN), "Error al poner el socket a la escucha.");
     }
     else // Preparar socket UDP
     {
         sock_pasivo = socket(AF_INET, SOCK_DGRAM, 0);
         check_error(sock_pasivo, "Error al crear el socket.");
-        check_error(bind(sock_pasivo, (struct sockaddr *) &d_local, sizeof(d_local)), "Error al asignar el puerto al socket.");
     }
 
     // Asignamos el puerto al socket
-    // TODO: Rellenar (4)
+    check_error(bind(sock_pasivo, (struct sockaddr *) &d_local, sizeof(d_local)), "Error al asignar el puerto al socket.");
 
     // Creamos el espacio para los objetos de datos de hilo
     hilos_aten = (pthread_t *) malloc (num_hilos_aten * sizeof(pthread_t));

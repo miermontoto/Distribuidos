@@ -70,3 +70,12 @@ void check_not_null(void *ptr, char *msg) {
 void check_not_natural(int ret, char *msg) {
 	if (ret <= 0) exit_error(msg);
 }
+
+void p_check_null(void *ptr, char *msg) {
+	if (ptr == NULL) p_exit_error(msg);
+}
+
+void p_exit_error(char *msg) {
+	perror(msg);
+	pthread_exit(NULL);
+}
