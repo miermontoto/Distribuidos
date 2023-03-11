@@ -5,14 +5,9 @@ all: sislog cliente
 
 sislog: # A RELLENAR DEPENDENCIAS
 	# A RELLENAR COMANDOS
-	|
-	|
 
 cliente: # A RELLENAR DEPENDENCIAS
 	# A RELLENAR COMANDOS
-	|
-	|
-
 
 limpia:
 	-rm *.o

@@ -10,23 +10,15 @@
 // Función de utilidad que determina si los caracteres de una cadena
 // son todos numericos
 int valida_numero(char *str) {
-    // RELLENA ESTE HUECO
-    |
-    |
-    |
-    |
+    // TODO: Rellenar (4)
 }
 
 // Función de utilidad que valida si una cadena de caracteres representa
 // una IPv4 valida
 int valida_ip(char *ip)
-{ 
+{
     // Comprueba si la cadena contiene una ip válida
-    // RELLENA ESTE HUECO
-    |
-    |
-    |
-    |
+    // TODO: Rellenar (4)
 }
 
 
@@ -34,7 +26,7 @@ int valida_ip(char *ip)
 // Devuelve un número aleatorio comprendido entre min y max
 double randRange(double min, double max)
 {
-  return min + (rand() / (double) RAND_MAX * (max - min + 1));
+	return min + (rand() / (double) RAND_MAX * (max - min + 1));
 }
 
 
@@ -48,26 +40,26 @@ double randRange(double min, double max)
 //
 // Más ejemplos en el programa principal.
 void log_debug(char *msg){
-  struct timespec t;
-  clock_gettime(_POSIX_MONOTONIC_CLOCK, &t);
-  printf("[%ld.%09ld] %s", t.tv_sec, t.tv_nsec, msg);
+	struct timespec t;
+	clock_gettime(_POSIX_MONOTONIC_CLOCK, &t);
+	printf("[%ld.%09ld] %s", t.tv_sec, t.tv_nsec, msg);
 }
 
 // Función de utilidad para volcar el contenido de un array de contadores
 void mostrar_recuento_eventos(int nfils, int ncols, char **filas, char ** columnas,int **valores)
 {
-  register int i,j;
-  printf("*****************  RECUENTO EVENTOS  *******************\n");
+	register int i,j;
+	printf("*****************  RECUENTO EVENTOS  *******************\n");
 
-  printf("\t");
-  for (i=0;i<ncols;i++)
-    printf("%s\t",columnas[i]);
-  printf("\n");
-  for (i=0;i<nfils;i++)
-  {
-    printf("%s\t",filas[i]);
-    for (j=0;j<ncols;j++)
-      printf("%d\t",valores[i][j]);
-    printf("\n");
-  }
+	printf("\t");
+	for (i=0;i<ncols;i++)
+		printf("%s\t",columnas[i]);
+	printf("\n");
+	for (i=0;i<nfils;i++)
+	{
+		printf("%s\t",filas[i]);
+		for (j=0;j<ncols;j++)
+			printf("%d\t",valores[i][j]);
+		printf("\n");
+	}
 }
