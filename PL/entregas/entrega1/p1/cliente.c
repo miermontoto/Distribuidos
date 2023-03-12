@@ -23,7 +23,6 @@ struct datos_hilo
 	FILE *fp;
 	struct sockaddr *dserv;
 };
-
 typedef struct datos_hilo datos_hilo;
 
 //
@@ -50,7 +49,28 @@ FILE *fp;
 
 void procesa_argumentos(int argc, char *argv[])
 {
-	// TODO: Rellenar (4)
+	if (argc != 6) {
+		printf("Uso: %s <ip_sislog> <puerto_sislog> <t|u> <nhilos> <fich_eventos>\n", argv[0]);
+		exit(EXIT_SUCCESS);
+	}
+
+	ip_syslog = argv[1];
+	//if(!valida_ip(ip_syslog)) exit_error("IP inválida");
+
+	puerto_syslog = atoi(argv[2]);
+	if(!valida_numero(argv[2])) exit_error("Puerto inválido");
+	if(puerto_syslog < 1024 || puerto_syslog > 65535) exit_error("Puerto inválido");
+
+	if(strcmp(argv[3], "t") == 0) es_stream = CIERTO;
+	else if(strcmp(argv[3], "u") == 0) es_stream = FALSO;
+	else exit_error("Tipo de socket inválido");
+
+	nhilos = atoi(argv[4]);
+	check_not_natural(nhilos, "Número de hilos inválido");
+
+	fich_eventos = argv[5];
+	fp = fopen(fich_eventos, "r");
+	check_null(fp, "Error al abrir el fichero de eventos");
 }
 
 void salir_bien(int s)
@@ -72,7 +92,7 @@ void *hilo_lector(datos_hilo *p)
 		// Leer la siguiente linea del fichero con fgets
 		// (haciendo exclusión mutua con otros hilos)
 		// El fichero (ya abierto por main) se recibe en uno de los parámetros
-		// TODO: Rellenar (5)
+		s = fgets(buffer, TAMLINEA, p -> fp);
 
 		if (s != NULL)
 		{
@@ -80,14 +100,20 @@ void *hilo_lector(datos_hilo *p)
 			// que se recibe en uno de los parámetros
 			if (es_stream) // Enviar la línea por un socket TCP
 			{
-				// TODO: Rellenar (4)
+				sock_dat = socket(AF_INET, SOCK_STREAM, 0);
+				check_error(sock_dat, "Error en socket TCP");
+				check_error(connect(sock_dat, p -> dserv, sizeof(struct sockaddr_in)), "Error en connect");
+				enviados = send(sock_dat, s, strlen(s), 0);
+				check_error(enviados, "Error en send");
 			}
 			else // Enviar la línea por un socket UDP
 			{
-				// TODO: Rellenar (4)
+				sock_dat = socket(AF_INET, SOCK_DGRAM, 0);
+				check_error(sock_dat, "Error en socket UDP");
+				check_error(sendto(sock_dat, s, strlen(s), 0, p -> dserv, sizeof(struct sockaddr_in)), "Error en sendto");
 			}
 			close(sock_dat);
-			printf("%s", s); // Para depuración, imprimios la línea que hemos enviado
+			printf("%s", s); // Para depuración, imprimimos la línea que hemos enviado
 		}
 	} while (s); // Mientras no se llegue al final del fichero
 }
@@ -102,14 +128,13 @@ void main(int argc, char *argv[])
 	pthread_t *th;
 	datos_hilo q;
 
-	int sock_dat, enviados;
 	struct sockaddr_in d_serv;
 
 	socklen_t ldir;
 	char buffer[50];
 
 	// Instalar la rutina de tratamiento de la señal SIGINT
-	// TODO: Rellenar (2)
+	signal(SIGINT, salir_bien);
 
 	// Procesar los argumentos de la línea de comandos
 	procesa_argumentos(argc, argv);
@@ -121,17 +146,21 @@ void main(int argc, char *argv[])
 		exit(6);
 	}
 
-	// creamos espacio para los objetos de datos de hilo
-	// TODO: Rellenar (4)
+	// Creamos espacio para los objetos de datos de hilo
+	th = (pthread_t *) malloc(nhilos * sizeof(pthread_t));
 
-	// incicializamos los datos que le vamos a pasar como parámetro a los hilo_lector
+	// Incicializamos los datos que le vamos a pasar como parámetro a los hilo_lector
 	// (se pasa a todos el mismo parámetro)
-	// TODO: Rellenar (4)
+	q.fp = fp;
+	q.dserv = (struct sockaddr *) &d_serv;
+	check_error(inet_pton(AF_INET, ip_syslog, &d_serv.sin_addr), "Error en inet_pton");
+	d_serv.sin_port = htons(puerto_syslog);
+	d_serv.sin_family = AF_INET;
 
 	for (i = 0; i < nhilos; i++)
 	{
-		// lanzamos el hilo lector
-		// TODO: Rellenar (3)
+		// Lanzamos el hilo lector
+		check_error(pthread_create(&th[i], NULL, (void *) hilo_lector, (void *) &q), "Error al lanzar el hilo lector");
 	}
 
 	// Una vez lanzados todos, hacemos un join sobre cada uno de ellos

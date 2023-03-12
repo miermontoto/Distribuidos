@@ -113,13 +113,13 @@ int tam_cola; // Tamaño de la cola circular
 static void handler(int signum)
 {
     register int i;
-
-    switch (signum)
+    switch(signum)
     {
         case SIGINT:
             destruir_cola(&cola_eventos); // Destruir cola
-            // Liberar memoria reservada para objetos de datos de hilos
-            // Desuir mutex que regulan el acceso a los ficheros
+            free(hilos_work); // Liberar memoria reservada para objetos de datos de hilos
+            for(i = 0; i < NUMFACILITIES; i++) pthread_mutex_destroy(&mfp[i]); // Destruir mutex
+            exit(EXIT_SUCCESS);
         default:
             pthread_exit(NULL);
     }
@@ -180,10 +180,11 @@ void* Worker(int* id)
         evt = (dato_cola*) obtener_dato_cola(&cola_eventos);
         p_check_null(evt, "Error al sacar de la cola de sincronización");
 
-        facilidad = (int) evt -> facilidad;
-        nivel = (int) evt -> nivel;
+        facilidad = evt -> facilidad - '0';
+        nivel = evt -> nivel - '0';
 
         check_error(pthread_mutex_lock(&mfp[facilidad]), "Error al bloquear el mutex");
+
         fp = fopen(facilities_file_names[facilidad], "a");
         check_null(fp, "Error al abrir el fichero de registro correspondiente");
 
@@ -285,7 +286,6 @@ int main(int argc, char *argv[])
     register int i; // Indice para bucles
     int *id;        // Para pasar el identificador a cada hilo trabajador
     int sock_pasivo;
-    int ret;        // Para almacenar el valor de retorno de las funciones
     struct sockaddr_in d_local;
     param_hilo_aten *q;
 
@@ -323,7 +323,7 @@ int main(int argc, char *argv[])
         check_error(pthread_mutex_init(&mfp[i], NULL), "Error al inicializar el mutex.");
 
     // Reservamos espacio para los objetos de datos de hilo de los hilos trabajadores
-    hilos_work = (pthread_t *)malloc(num_hilos_work * sizeof(pthread_t));
+    hilos_work = (pthread_t *) malloc(num_hilos_work * sizeof(pthread_t));
     check_null(hilos_work, "Error al reservar memoria para los hilos trabajadores.");
 
     inicializar_cola(&cola_eventos, tam_cola); // Inicializamos la cola
@@ -352,6 +352,8 @@ int main(int argc, char *argv[])
     }
 
     // Esperamos a que terminen todos los hilos
-    for (i = 0; i < num_hilos_aten; i++) pthread_join(hilos_aten[i], NULL);
-    for (i = 0; i < num_hilos_work; i++) pthread_join(hilos_work[i], NULL);
+    for (i = 0; i < num_hilos_aten; i++) check_error(pthread_join(hilos_aten[i], NULL), "Error en el join.");
+    for (i = 0; i < num_hilos_work; i++) check_error(pthread_join(hilos_work[i], NULL), "Error en el join.");
+
+    return 0;
 }

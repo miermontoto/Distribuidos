@@ -6,6 +6,7 @@
 
 // Función de utilidad que determina si los caracteres de una cadena son todos numericos
 int valida_numero(char *str) {
+	check_null(str, "valida_numero: str es NULL");
     register int i = 0;
 	while (str[i] != '\0') {
 		if (str[i] < '0' || str[i] > '9') return FALSO;
@@ -17,12 +18,14 @@ int valida_numero(char *str) {
 // Función de utilidad que valida si una cadena de caracteres representa una IPv4 valida
 int valida_ip(char *ip)
 {
-    ip = strtok(ip, ".");
+	char* copy;
+	strcpy(copy, ip);
+    char* split = strtok(copy, ".");
 	register int l = 0;
-	while(ip != NULL) {
-		if (!valida_numero(ip)) return FALSO;
-		if (atoi(ip) < 0 || atoi(ip) > 255) return FALSO;
-		ip = strtok(NULL, ".");
+	while(split != NULL) {
+		if (!valida_numero(split)) return FALSO;
+		if (atoi(split) < 0 || atoi(split) > 255) return FALSO;
+		split = strtok(NULL, ".");
 		l++;
 	}
 	return l == 4;
@@ -53,6 +56,10 @@ void log_debug(char *msg) {
 void check_error(int ret, char *msg) {
 	if (ret < 0) exit_error(msg);
 }
+
+/*void check_error(int ret, char* msg, int val) {
+	if (ret < val) exit_error(msg);
+}*/
 
 void exit_error(char *msg) {
 	perror(msg);

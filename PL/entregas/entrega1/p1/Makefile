@@ -7,7 +7,7 @@ sislog: sislog.c
 	$(CC) -o sislog sislog.c cola.c util.c $(CFLAGS)
 
 cliente: cliente.c
-	$(CC) -o cliente cliente.c $(CFLAGS)
+	$(CC) -o cliente cliente.c util.c $(CFLAGS)
 
 limpia:
 	-rm *.o
