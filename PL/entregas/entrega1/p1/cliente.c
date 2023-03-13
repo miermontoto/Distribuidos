@@ -47,6 +47,8 @@ char *fich_eventos;
 // handler de archivo
 FILE *fp;
 
+pthread_mutex_t file_read_mutex;
+
 void procesa_argumentos(int argc, char *argv[])
 {
 	if (argc != 6) {
@@ -55,10 +57,9 @@ void procesa_argumentos(int argc, char *argv[])
 	}
 
 	ip_syslog = argv[1];
-	//if(!valida_ip(ip_syslog)) exit_error("IP inválida");
+	if(!valida_ip(ip_syslog)) exit_error("IP inválida");
 
 	puerto_syslog = atoi(argv[2]);
-	if(!valida_numero(argv[2])) exit_error("Puerto inválido");
 	if(puerto_syslog < 1024 || puerto_syslog > 65535) exit_error("Puerto inválido");
 
 	if(strcmp(argv[3], "t") == 0) es_stream = CIERTO;
@@ -66,7 +67,7 @@ void procesa_argumentos(int argc, char *argv[])
 	else exit_error("Tipo de socket inválido");
 
 	nhilos = atoi(argv[4]);
-	check_not_natural(nhilos, "Número de hilos inválido");
+	check_value(nhilos, "Número de hilos inválido", 1);
 
 	fich_eventos = argv[5];
 	fp = fopen(fich_eventos, "r");
@@ -153,9 +154,11 @@ void main(int argc, char *argv[])
 	// (se pasa a todos el mismo parámetro)
 	q.fp = fp;
 	q.dserv = (struct sockaddr *) &d_serv;
-	check_error(inet_pton(AF_INET, ip_syslog, &d_serv.sin_addr), "Error en inet_pton");
+	check_value(inet_pton(AF_INET, ip_syslog, &d_serv.sin_addr), "Error en inet_pton", 1);
 	d_serv.sin_port = htons(puerto_syslog);
 	d_serv.sin_family = AF_INET;
+
+	pthread_mutex_init(&file_read_mutex, NULL);
 
 	for (i = 0; i < nhilos; i++)
 	{

@@ -2,6 +2,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include "util.h"
 
 // Función de utilidad que determina si los caracteres de una cadena son todos numericos
@@ -18,17 +19,10 @@ int valida_numero(char *str) {
 // Función de utilidad que valida si una cadena de caracteres representa una IPv4 valida
 int valida_ip(char *ip)
 {
-	char* copy;
-	strcpy(copy, ip);
-    char* split = strtok(copy, ".");
-	register int l = 0;
-	while(split != NULL) {
-		if (!valida_numero(split)) return FALSO;
-		if (atoi(split) < 0 || atoi(split) > 255) return FALSO;
-		split = strtok(NULL, ".");
-		l++;
-	}
-	return l == 4;
+	void* addr = malloc(sizeof(struct in_addr));
+	int ret = inet_pton(AF_INET, ip, addr);
+	free(addr);
+	return ret;
 }
 
 // Función de utilidad, para generar los tiempos aleatorios entre un
@@ -47,42 +41,42 @@ double randRange(double min, double max)
 //
 //  log_debug("Mensaje a mostrar por pantalla")
 //
-void log_debug(char *msg) {
+void log_debug(char* msg) {
 	struct timespec t;
 	clock_gettime(_POSIX_MONOTONIC_CLOCK, &t);
 	printf("[%ld.%09ld] %s", t.tv_sec, t.tv_nsec, msg);
 }
 
-void check_error(int ret, char *msg) {
+void check_error(int ret, char* msg) {
 	if (ret < 0) exit_error(msg);
 }
 
-/*void check_error(int ret, char* msg, int val) {
+void check_value(int ret, char* msg, int val) {
 	if (ret < val) exit_error(msg);
-}*/
+}
 
-void exit_error(char *msg) {
+void exit_error(char* msg) {
 	perror(msg);
 	exit(EXIT_FAILURE);
 }
 
-void check_null(void *ptr, char *msg) {
+void check_null(void* ptr, char* msg) {
 	if (ptr == NULL) exit_error(msg);
 }
 
-void check_not_null(void *ptr, char *msg) {
+void check_not_null(void* ptr, char* msg) {
 	if (ptr != NULL) exit_error(msg);
 }
 
-void check_not_natural(int ret, char *msg) {
-	if (ret <= 0) exit_error(msg);
-}
-
-void p_check_null(void *ptr, char *msg) {
+void p_check_null(void* ptr, char* msg) {
 	if (ptr == NULL) p_exit_error(msg);
 }
 
-void p_exit_error(char *msg) {
+void p_check_error(int ret, char* msg) {
+	if (ret < 0) p_exit_error(msg);
+}
+
+void p_exit_error(char* msg) {
 	perror(msg);
 	pthread_exit(NULL);
 }
