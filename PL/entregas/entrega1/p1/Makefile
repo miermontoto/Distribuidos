@@ -12,5 +12,5 @@ cliente: cliente.c
 limpia:
 	-rm *.o
 
-cleanall: limpia
-	-rm sislog cliente *.dat
+cleanall:
+	-rm sislog cliente *.dat vgcore.*

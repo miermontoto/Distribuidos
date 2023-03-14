@@ -129,7 +129,7 @@ void procesa_argumentos(int argc, char *argv[])
 {
     if (argc != 6) {
         printf("Uso: %s <puerto> <t|u> <tam_cola> <num_hilos_aten> <num_hilos_work>\n", argv[0]);
-        exit_error("Número de argumentos incorrecto");
+        exit(EXIT_SUCCESS);
     }
 
     puerto = atoi(argv[1]);
@@ -140,13 +140,13 @@ void procesa_argumentos(int argc, char *argv[])
     else exit_error("Tipo de socket incorrecto");
 
     tam_cola = atoi(argv[3]);
-    check_not_natural(tam_cola, "Tamaño de cola inválido");
+    check_value(tam_cola, "Tamaño de cola inválido", 1);
 
     num_hilos_aten = atoi(argv[4]);
-    check_not_natural(num_hilos_aten, "Número de hilos de atención inválido");
+    check_value(num_hilos_aten, "Número de hilos de atención inválido", 1);
 
     num_hilos_work = atoi(argv[5]);
-    check_not_natural(num_hilos_work, "Número de hilos trabajadores inválido");
+    check_value(num_hilos_work, "Número de hilos trabajadores inválido", 1);
 }
 
 // ====================================================================
@@ -186,18 +186,23 @@ void* Worker(int* id)
         check_error(pthread_mutex_lock(&mfp[facilidad]), "Error al bloquear el mutex");
 
         fp = fopen(facilities_file_names[facilidad], "a");
-        check_null(fp, "Error al abrir el fichero de registro correspondiente");
+        p_check_null(fp, "Error al abrir el fichero de registro correspondiente");
 
         timeraw = time(NULL);
         fechahora = ctime(&timeraw);
         fechahora[strlen(fechahora) - 1] = '\0';
 
+        evt -> msg[strcspn(evt -> msg, "\r\n")] = '\0';
+
         check_error(fprintf(fp,
-            "%s:%s:%s:%s", facilities_names[facilidad], level_names[nivel], fechahora, evt -> msg),
+            "%s:%s:%s:%s\n", facilities_names[facilidad], level_names[nivel], fechahora, evt -> msg),
                 "Error al escribir al mensaje de log");
         check_error(fclose(fp), "Error al cerrar el fichero de registro correspondiente");
 
         check_error(pthread_mutex_unlock(&mfp[facilidad]), "Error al desbloquear el mutex");
+
+        /*sprintf(msg, "Guardando %s:%s:%s:%s\n", facilities_names[facilidad], level_names[nivel], fechahora, evt -> msg);
+        log_debug(msg);*/
 
         // free(evt -> msg);
         free(evt);
@@ -234,35 +239,37 @@ void *AtencionPeticiones(param_hilo_aten *q)
         if (es_stream) // TCP
         {
             // Aceptar el cliente, leer su mensaje hasta recibirlo entero, y cerrar la conexión
-            check_error(listen(s, SOMAXCONN), "Error en el listen.");
+            p_check_error(listen(s, SOMAXCONN), "Error en el listen.");
             sock_dat = accept(s, (struct sockaddr *) &d_cliente, &l_dir);
-            check_error(sock_dat, "Error en el accept.");
+            p_check_error(sock_dat, "Error en el accept.");
             recibidos = recv(sock_dat, buffer, TAMMSG, 0);
-            check_error(recibidos, "Error en el recv.");
+            p_check_error(recibidos, "Error en el recv.");
             close(sock_dat);
         }
         else // UDP
         {
             // Recibir el mensaje del datagrama
             recibidos = recvfrom(s, buffer, TAMMSG, 0, (struct sockaddr *) &d_cliente, &l_dir);
-            check_error(recibidos, "Error en el recvfrom.");
+            p_check_error(recibidos, "Error en el recvfrom.");
         }
         // Una vez recibido el mensaje, es necesario separar sus partes,
         // guardarlos en la estructura adecuada, y poner esa estructura en la cola
         // de sincronización.
         p = (dato_cola *) malloc(sizeof(dato_cola));
-        check_null(p, "Error al crear el objeto de datos del hilo");
+        p_check_null(p, "Error al crear el objeto de datos del hilo");
 
         token = strtok_r(buffer, ":", &loc); // "facilidad" en token
-        if(!valida_numero(token)) exit_error("Error en el número de facilidad");
-        if(atoi(token) >= NUMFACILITIES) exit_error("Error en el número de facilidad");
-        check_error(atoi(token), "Error en el número de facilidad");
+        if(!valida_numero(token) || atoi(token) >= NUMFACILITIES || atoi(token) < 0) {
+            log_debug("Número de facilidad inválido. Se ignora el mensaje.\n");
+            continue;
+        }
         p -> facilidad = *token;
 
         token = strtok_r(NULL, ":", &loc); // "nivel" en token
-        if(!valida_numero(token)) exit_error("Error en el número de nivel");
-        if(atoi(token) >= NUMLEVELS) exit_error("Error en el número de nivel");
-        check_error(atoi(token), "Error en el número de nivel");
+        if(!valida_numero(token) || atoi(token) >= NUMLEVELS || atoi(token) < 0) {
+            log_debug("Número de nivel inválido. Se ignora el mensaje.\n");
+            continue;
+        }
         p -> nivel = *token;
 
         token = strtok_r(NULL, ":", &loc); // "mensaje" en token

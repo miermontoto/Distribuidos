@@ -1,12 +1,12 @@
-1:9:Fallo 1
+1:7:Fallo 1
 2:3:Cosa 2
 3:4:Cosa 3
 4:5:Cosa 4
 9:1:Random text
-10:2:Random text
+9:2:Random text
 6:7:Ayuda
 9:2:Gallego
 1:5:Pugafran
 2:6:Random text
 3:7:Puga gamer
-4:8:The fucking
+4:4:The fucking
