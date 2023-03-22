@@ -48,7 +48,7 @@ Cola cola_eventos;
 int puerto; // Cola par_t* hilos_aten;en el que esperamos los mensajes
 
 // Variable booleana que indica si el socket es orientado a conexión o no
-unsigned char es_stream = CIERTO;
+unsigned short es_stream = CIERTO;
 
 // Variable que almacena el numero de hilos de atencion de peticiones
 int num_hilos_aten;
@@ -58,11 +58,11 @@ int num_hilos_work;
 
 // Puntero a la dirección de comienzo del array de datos de hilo
 // de los hilos de atencion de peticiones
-pthread_t* hilos_aten;
+pthread_t* hilos_aten = NULL;
 
 // Puntero a la dirección de comienzo del array de datos de hilo
 // de los hilos trabajadores
-pthread_t* hilos_work;
+pthread_t* hilos_work = NULL;
 
 // Arrays para la traducción de nombres de niveles y de facilities
 // y para obtener los nombres de los ficheros de registro
@@ -156,10 +156,10 @@ void procesa_argumentos(int argc, char *argv[])
 void* Worker(int* id)
 {
     int id_worker;
-    FILE* fp;
-    dato_cola* evt;
+    FILE* fp = NULL;
+    dato_cola* evt = NULL;
     char msg[2048];
-    char* fechahora;
+    char* fechahora = NULL;
     time_t timeraw;
 
     int facilidad;
@@ -216,9 +216,9 @@ void *AtencionPeticiones(param_hilo_aten *q)
     socklen_t l_dir = sizeof(d_cliente);
     char msg[100];
     char buffer[TAMMSG];
-    char *token;
-    char *loc;
-    dato_cola *p;
+    char *token = NULL;
+    char *loc = NULL;
+    dato_cola *p = NULL;
     int s;        // Variable local para almacenar el socket que se recibe como parámetro
     int num_hilo; // Variable local para almacenar el numero de hilo que se recibe como parámetro
                   // (no usada, pero puedes usarla para imprimir mensajes de depuración)
@@ -291,10 +291,10 @@ void *AtencionPeticiones(param_hilo_aten *q)
 int main(int argc, char *argv[])
 {
     register int i; // Indice para bucles
-    int *id;        // Para pasar el identificador a cada hilo trabajador
+    int *id = NULL;        // Para pasar el identificador a cada hilo trabajador
     int sock_pasivo;
     struct sockaddr_in d_local;
-    param_hilo_aten *q;
+    param_hilo_aten *q = NULL;
 
     procesa_argumentos(argc, argv);
 

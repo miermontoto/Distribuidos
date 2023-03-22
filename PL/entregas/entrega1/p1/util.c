@@ -48,7 +48,7 @@ void log_debug(char* msg) {
 }
 
 void check_error(int ret, char* msg) {
-	if (ret < 0) exit_error(msg);
+	check_value(ret, msg, 0);
 }
 
 void check_value(int ret, char* msg, int val) {

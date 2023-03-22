@@ -30,7 +30,7 @@ typedef struct datos_hilo datos_hilo;
 //
 
 // IP del proceso syslog
-char *ip_syslog;
+char *ip_syslog = NULL;
 
 // Puerto en el que espera el proceso syslog los
 int puerto_syslog;
@@ -39,13 +39,13 @@ int puerto_syslog;
 int nhilos;
 
 // Es o no orientado a conexion
-unsigned char es_stream = CIERTO;
+unsigned short es_stream = CIERTO;
 
 // nombre del fichero fuente de eventos
-char *fich_eventos;
+char *fich_eventos = NULL;
 
 // handler de archivo
-FILE *fp;
+FILE *fp = NULL;
 
 pthread_mutex_t file_read_mutex;
 
@@ -84,7 +84,7 @@ void *hilo_lector(datos_hilo *p)
 {
 	int enviados;
 	char buffer[TAMLINEA];
-	char *s;
+	char *s = NULL;
 	int sock_dat;
 
 	do
@@ -93,7 +93,10 @@ void *hilo_lector(datos_hilo *p)
 		// Leer la siguiente linea del fichero con fgets
 		// (haciendo exclusión mutua con otros hilos)
 		// El fichero (ya abierto por main) se recibe en uno de los parámetros
+
+		check_error(pthread_mutex_lock(&file_read_mutex), "Error en pthread_mutex_lock");
 		s = fgets(buffer, TAMLINEA, p -> fp);
+		check_error(pthread_mutex_unlock(&file_read_mutex), "Error en pthread_mutex_unlock");
 
 		if (s != NULL)
 		{
@@ -126,7 +129,7 @@ void main(int argc, char *argv[])
 
 	register int i;
 
-	pthread_t *th;
+	pthread_t *th = NULL;
 	datos_hilo q;
 
 	struct sockaddr_in d_serv;

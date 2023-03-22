@@ -1,4 +1,4 @@
-make clean
+make cleanall &>/dev/null
 make all -B
 
 echo "Validación de sislog"
@@ -30,4 +30,17 @@ cliente 127.0.0.1 7890 test 5 eventos.txt &>/dev/null || echo "Prueba con protoc
 cliente 127.0.0.1 7890 p 5 eventos.txt &>/dev/null || echo "Prueba con protocolo incorrecto (p)"
 cliente 127.0.0.1 7890 t 0 eventos.txt &>/dev/null || echo "Prueba con número de hilos inválido"
 cliente 127.0.0.1 7890 t 5 rubennmg.tpg &>/dev/null || echo "Prueba con archivo de eventos inexistente"
-cliente 127.0.0.1 7890 t 5 cola.h &>/dev/null || echo "Prueba con archivo de eventos incorrecto"
+
+echo
+echo "Validación de ambos"
+echo "-------------------"
+
+pkill sislog
+pkill cliente
+sislog 7890 t 5 5 5 &
+cliente 127.0.0.1 7890 t 5 eventos.txt &>/dev/null
+cliente 127.0.0.1 7890 t 5 rand.txt &>/dev/null
+cat fac01.dat
+
+pkill sislog
+pkill cliente
