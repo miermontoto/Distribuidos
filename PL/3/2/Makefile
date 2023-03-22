@@ -17,3 +17,9 @@ lee-menu:
 
 lista:
 		gcc $(flags) lee-lista.c tipos_xdr.c -o lista
+
+cliente: cliente-datos.c
+		gcc $(flags) cliente-datos.c tipos_xdr.c -o cliente
+
+servidor: servidor-datos.c
+		gcc $(flags) servidor-datos.c tipos_xdr.c -o servidor

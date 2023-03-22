@@ -37,6 +37,5 @@ int main() {
 
     xdr_destroy(&operacion);
     fclose(fichero);
-    close(fichero);
     return 0;
 }
