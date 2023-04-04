@@ -110,14 +110,13 @@ int tam_cola; // Tamaño de la cola circular
 // ====================================================================
 // Función handler de las señales recibidas por el hilo buque
 // ====================================================================
-static void handler(int signum)
-{
+static void handler(int signum) {
     register int i;
-    switch(signum)
-    {
+    switch(signum) {
         case SIGINT:
             destruir_cola(&cola_eventos); // Destruir cola
             free(hilos_work); // Liberar memoria reservada para objetos de datos de hilos
+            free(hilos_aten);
             for(i = 0; i < NUMFACILITIES; i++) pthread_mutex_destroy(&mfp[i]); // Destruir mutex
             exit(EXIT_SUCCESS);
         default:
@@ -125,8 +124,7 @@ static void handler(int signum)
     }
 }
 
-void procesa_argumentos(int argc, char *argv[])
-{
+void procesa_argumentos(int argc, char *argv[]) {
     if (argc != 6) {
         printf("Uso: %s <puerto> <t|u> <tam_cola> <num_hilos_aten> <num_hilos_work>\n", argv[0]);
         exit(EXIT_SUCCESS);
@@ -153,8 +151,7 @@ void procesa_argumentos(int argc, char *argv[])
 // Implementación de los hilos
 // ====================================================================
 
-void* Worker(int* id)
-{
+void* Worker(int* id) {
     int id_worker;
     FILE* fp = NULL;
     dato_cola* evt = NULL;
@@ -204,13 +201,12 @@ void* Worker(int* id)
         /*sprintf(msg, "Guardando %s:%s:%s:%s\n", facilities_names[facilidad], level_names[nivel], fechahora, evt -> msg);
         log_debug(msg);*/
 
-        // free(evt -> msg);
+        //free(evt -> msg);
         free(evt);
     }
 }
 
-void *AtencionPeticiones(param_hilo_aten *q)
-{
+void *AtencionPeticiones(param_hilo_aten *q) {
     int sock_dat, recibidos;
     struct sockaddr_in d_cliente;
     socklen_t l_dir = sizeof(d_cliente);
@@ -232,25 +228,21 @@ void *AtencionPeticiones(param_hilo_aten *q)
     num_hilo = q -> num_hilo;
     free(q); // y liberamos la memoria reservada para el parámetro
 
-    while (1) // Bucle infinito de atencion de mensajes
-    {
+    while (1) { // Bucle infinito de atencion de mensajes
         // Primero, se recibe el mensaje del cliente. Cómo se haga depende
         // de si el socket es orientado a conexión o no
-        if (es_stream) // TCP
-        {
+        if (es_stream) { // TCP
             // Aceptar el cliente, leer su mensaje hasta recibirlo entero, y cerrar la conexión
-            p_check_error(listen(s, SOMAXCONN), "Error en el listen.");
+            p_check_error(listen(s, SOMAXCONN), "Error en el listen");
             sock_dat = accept(s, (struct sockaddr *) &d_cliente, &l_dir);
-            p_check_error(sock_dat, "Error en el accept.");
+            p_check_error(sock_dat, "Error en el accept");
             recibidos = recv(sock_dat, buffer, TAMMSG, 0);
-            p_check_error(recibidos, "Error en el recv.");
+            p_check_error(recibidos, "Error en el recv");
             close(sock_dat);
-        }
-        else // UDP
-        {
+        } else { // UDP
             // Recibir el mensaje del datagrama
             recibidos = recvfrom(s, buffer, TAMMSG, 0, (struct sockaddr *) &d_cliente, &l_dir);
-            p_check_error(recibidos, "Error en el recvfrom.");
+            p_check_error(recibidos, "Error en el recvfrom");
         }
         // Una vez recibido el mensaje, es necesario separar sus partes,
         // guardarlos en la estructura adecuada, y poner esa estructura en la cola
@@ -288,10 +280,9 @@ void *AtencionPeticiones(param_hilo_aten *q)
 // Su misión es crear e inicializar los recursos de sincronización globales,
 // lanzar todos los hilos y esperar a que finalicen
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     register int i; // Indice para bucles
-    int *id = NULL;        // Para pasar el identificador a cada hilo trabajador
+    int *id = NULL; // Para pasar el identificador a cada hilo trabajador
     int sock_pasivo;
     struct sockaddr_in d_local;
     param_hilo_aten *q = NULL;
@@ -306,32 +297,32 @@ int main(int argc, char *argv[])
     d_local.sin_addr.s_addr = htonl(INADDR_ANY);
     d_local.sin_port = htons(puerto);
 
-    if (es_stream) // Preparar socket TCP
-    {
+    if (es_stream) { // Preparar socket TCP
         sock_pasivo = socket(AF_INET, SOCK_STREAM, 0);
-        check_error(sock_pasivo, "Error al crear el socket.");
-    }
-    else // Preparar socket UDP
-    {
+        check_error(sock_pasivo, "Error al crear el socket");
+    } else { // Preparar socket UDP
         sock_pasivo = socket(AF_INET, SOCK_DGRAM, 0);
-        check_error(sock_pasivo, "Error al crear el socket.");
+        check_error(sock_pasivo, "Error al crear el socket");
     }
 
+    // Se establecen las opciones del socket para que el puerto pueda ser reutilizado.
+    check_error(setsockopt(sock_pasivo, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int)), "Error al establecer opciones en el socket");
+
     // Asignamos el puerto al socket
-    check_error(bind(sock_pasivo, (struct sockaddr *) &d_local, sizeof(d_local)), "Error al asignar el puerto al socket.");
+    check_error(bind(sock_pasivo, (struct sockaddr *) &d_local, sizeof(d_local)), "Error al asignar el puerto al socket");
 
     // Creamos el espacio para los objetos de datos de hilo
     hilos_aten = (pthread_t *) malloc (num_hilos_aten * sizeof(pthread_t));
-    check_null(hilos_aten, "Error al reservar memoria para los hilos de atención de peticiones.");
+    check_null(hilos_aten, "Error al reservar memoria para los hilos de atención de peticiones");
 
     // Inicializamos los mutex de exclusión a los ficheros de log
     // en que escribirán los workers
     for (i = 0; i < NUMFACILITIES; i++)
-        check_error(pthread_mutex_init(&mfp[i], NULL), "Error al inicializar el mutex.");
+        check_error(pthread_mutex_init(&mfp[i], NULL), "Error al inicializar el mutex");
 
     // Reservamos espacio para los objetos de datos de hilo de los hilos trabajadores
     hilos_work = (pthread_t *) malloc(num_hilos_work * sizeof(pthread_t));
-    check_null(hilos_work, "Error al reservar memoria para los hilos trabajadores.");
+    check_null(hilos_work, "Error al reservar memoria para los hilos trabajadores");
 
     inicializar_cola(&cola_eventos, tam_cola); // Inicializamos la cola
 
@@ -344,7 +335,7 @@ int main(int argc, char *argv[])
         q -> num_hilo = i;
 
         // Lanzamos el hilo
-        check_error(pthread_create(&hilos_aten[i], NULL, (void *) AtencionPeticiones, (void *) q), "Error al crear el hilo.");
+        check_error(pthread_create(&hilos_aten[i], NULL, (void *) AtencionPeticiones, (void *) q), "Error al crear el hilo");
     }
 
     // Y creamos cada uno de los hilos trabajadores
@@ -355,12 +346,12 @@ int main(int argc, char *argv[])
         *id = i;
 
         // Lanzamos el hilo
-        check_error(pthread_create(&hilos_work[i], NULL, (void *) Worker, (void *) id), "Error al crear el hilo.");
+        check_error(pthread_create(&hilos_work[i], NULL, (void *) Worker, (void *) id), "Error al crear el hilo");
     }
 
     // Esperamos a que terminen todos los hilos
-    for (i = 0; i < num_hilos_aten; i++) check_error(pthread_join(hilos_aten[i], NULL), "Error en el join.");
-    for (i = 0; i < num_hilos_work; i++) check_error(pthread_join(hilos_work[i], NULL), "Error en el join.");
+    for (i = 0; i < num_hilos_aten; i++) check_error(pthread_join(hilos_aten[i], NULL), "Error en el join");
+    for (i = 0; i < num_hilos_work; i++) check_error(pthread_join(hilos_work[i], NULL), "Error en el join");
 
     return 0;
 }
