@@ -1,5 +1,3 @@
-package servidor;
-
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.lang.SecurityManager;
