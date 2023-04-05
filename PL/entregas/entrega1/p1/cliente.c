@@ -87,65 +87,54 @@ void *hilo_lector(datos_hilo *p)
 	char *s = NULL;
 	int sock_dat;
 
-	do
-	{
+	do {
 		bzero(buffer, TAMLINEA);
 		// Leer la siguiente linea del fichero con fgets
 		// (haciendo exclusión mutua con otros hilos)
 		// El fichero (ya abierto por main) se recibe en uno de los parámetros
-
 		check_error(pthread_mutex_lock(&file_read_mutex), "Error en pthread_mutex_lock");
 		s = fgets(buffer, TAMLINEA, p -> fp);
 		check_error(pthread_mutex_unlock(&file_read_mutex), "Error en pthread_mutex_unlock");
 
-		if (s != NULL)
-		{
+		if (s != NULL) {
 			// La IP y puerto del servidor están en una estructura sockaddr_in
 			// que se recibe en uno de los parámetros
-			if (es_stream) // Enviar la línea por un socket TCP
-			{
+			if (es_stream) { // Enviar la línea por un socket TCP
 				sock_dat = socket(AF_INET, SOCK_STREAM, 0);
 				check_error(sock_dat, "Error en socket TCP");
 				check_error(connect(sock_dat, p -> dserv, sizeof(struct sockaddr_in)), "Error en connect");
 				enviados = send(sock_dat, s, strlen(s), 0);
 				check_error(enviados, "Error en send");
-			}
-			else // Enviar la línea por un socket UDP
-			{
+			} else { // Enviar la línea por un socket UDP
 				sock_dat = socket(AF_INET, SOCK_DGRAM, 0);
 				check_error(sock_dat, "Error en socket UDP");
 				check_error(sendto(sock_dat, s, strlen(s), 0, p -> dserv, sizeof(struct sockaddr_in)), "Error en sendto");
 			}
+
 			close(sock_dat);
 			printf("%s", s); // Para depuración, imprimimos la línea que hemos enviado
 		}
 	} while (s); // Mientras no se llegue al final del fichero
 }
 
-void main(int argc, char *argv[])
-{
-	// La función main crea los hilos lector, pasándoles los parámetros necesarios,
-	// y espera a que terminen
+
+// La función main crea los hilos lector, pasándoles los parámetros necesarios,
+// y espera a que terminen
+void main(int argc, char* argv[]) {
 
 	register int i;
-
 	pthread_t *th = NULL;
 	datos_hilo q;
-
 	struct sockaddr_in d_serv;
-
 	socklen_t ldir;
 	char buffer[50];
 
-	// Instalar la rutina de tratamiento de la señal SIGINT
-	signal(SIGINT, salir_bien);
+	signal(SIGINT, salir_bien); // Instalar la rutina de tratamiento de la señal SIGINT
 
-	// Procesar los argumentos de la línea de comandos
-	procesa_argumentos(argc, argv);
+	procesa_argumentos(argc, argv); // Procesar los argumentos de la línea de comandos
 
 	printf("IP servidor %s, es_stream=%d\n", ip_syslog, es_stream);
-	if ((fp = fopen(fich_eventos, "r")) == NULL)
-	{
+	if ((fp = fopen(fich_eventos, "r")) == NULL) {
 		perror("Error al abrir el fichero de eventos");
 		exit(6);
 	}
@@ -163,18 +152,15 @@ void main(int argc, char *argv[])
 
 	pthread_mutex_init(&file_read_mutex, NULL);
 
-	for (i = 0; i < nhilos; i++)
-	{
+	for (i = 0; i < nhilos; i++) {
 		// Lanzamos el hilo lector
 		check_error(pthread_create(&th[i], NULL, (void *) hilo_lector, (void *) &q), "Error al lanzar el hilo lector");
 	}
 
 	// Una vez lanzados todos, hacemos un join sobre cada uno de ellos
-	for (i = 0; i < nhilos; i++)
-	{
+	for (i = 0; i < nhilos; i++) {
 		pthread_join(th[i], NULL);
 	}
 
-	// Al llegar aquí, todos los hilos han terminado
-	fclose(fp);
+	check_error(fclose(fp), "Error al cerrar el fichero"); // Al llegar aquí, todos los hilos han terminado
 }

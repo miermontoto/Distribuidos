@@ -21,38 +21,36 @@ char *ip_sislog;
 int num_clientes;
 
 // tipo de datos que recibiran los hilos cliente
-struct datos_hilo{
+struct datos_hilo {
 	FILE *fp;
 	int id_cliente;
 };
-
 typedef struct datos_hilo datos_hilo;
 
-void *Cliente(datos_hilo *p)
-{
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void *Cliente(datos_hilo *p) {
     // Implementación del hilo que genera los eventos que se envían al
     // servidor via RPC
-    CLIENT *cl;
-    FILE *fp;
+    CLIENT* cl;
+    FILE* fp;
     int id_cliente;
     char buffer[TAMLINEA];  // Buffer de lectura de lineas del fichero de eventos
     char msg[TAMLINEA * 2];
 
     Resultado *res;
-    char *s;
-    char * token;
-    char * loc;
+    char* s;
+    char* token;
+    char* loc;
 
     eventsislog evt;
 
-    id_cliente = p -> id_cliente;  // Capturar el id del cliente en una variable local
+    id_cliente = p -> id_cliente; // Capturar el id del cliente en una variable local
     fp = p -> fp;
-    free(p);  // Ya no necesitamos el parámetro recibido, lo liberamos
-
+    free(p); // Ya no necesitamos el parámetro recibido, lo liberamos
 
     // Bucle de lectura de eventos
-    do
-    {
+    do {
         // Creamos un handler de conexión con el servidor RPC
         // y comprobamos que se ha creado correctamente
         cl = clnt_create(ip_sislog, SISLOG, PRIMERA, "tcp");
@@ -61,32 +59,55 @@ void *Cliente(datos_hilo *p)
             exit(1);
         }
 
-        // leemos mediante exclusión la siguiente línea del fichero cuyo *FILE
+        // Leemos mediante exclusión la siguiente línea del fichero cuyo *FILE
         // recibimos en uno de los campos de de la estructura datos_hilo
-        // TODO: Rellenar (3)
+        bzero(buffer, TAMLINEA);
+        check_error(pthread_mutex_lock(&mutex), "pthread_mutex_lock");
+        s = fgets(buffer, TAMLINEA, fp);
+        check_error(pthread_mutex_unlock(&mutex), "pthread_mutex_unlock");
 
-        // si la cadena leida del fichero no es nula, tokenizamos de manera
+        // Si la cadena leida del fichero no es nula, tokenizamos de manera
         // reentrante la línea para extraer sus tokens e ir componiendo
         // el mensaje de la invocación remota al sislog
-        if (s != NULL)
-        {
+        if (s != NULL) {
             // Tokenizar cadena y rellenado de la estructura de datos
-            // TODO: Rellenar (6)
+            token = strtok_r(s, ":", &loc);
+            evt.facilidad = atoi(token);
+            token = strtok_r(NULL, ":", &loc);
+            evt.nivel = atoi(token);
+            token = strtok_r(NULL, ":", &loc);
+            strcpy(evt.msg, token);
 
             // Mensaje de depuración
-            sprintf(msg, "Cliente %d envia evento. Facilidad: %d, Nivel: %d, Texto: %s\n",id_cliente, evt.facilidad, evt.nivel, evt.msg);
+            sprintf(msg, "Cliente %d envia evento. Facilidad: %d, Nivel: %d, Texto: %s\n", id_cliente, evt.facilidad, evt.nivel, evt.msg);
             log_debug(msg);
 
             // Enviar evento por RPC e imprimir el velor retornado
             // y liberar seguidamente las estructuras de datos utilizadas
-            // TODO: Rellenar (7)
+            res = registrar_evento_1(&evt, cl);
+            check_null(res, "Error al llamar al servidor RPC");
+            sprintf(msg, "Cliente %d recibe respuesta. Caso: %d", id_cliente, res -> caso);
+            switch(res -> caso) {
+                case 0:
+                    sprintf(msg, "%s, Valor: %d\n", msg, res -> Resultado_u.valor);
+                    break;
+                case 1:
+                    sprintf(msg, "%s, Mensaje: %s\n", msg, res -> Resultado_u.msg);
+                    break;
+                default:
+                    sprintf(msg, "%s, Error desconocido\n", msg);
+                    break;
+            }
+            log_debug(msg);
+            free(res);
         }
+
         clnt_destroy(cl);
     } while(s);
     return NULL;
 }
 
-int  main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
     register int i;    // Indice para bucles
     pthread_t *th;
