@@ -1,7 +1,8 @@
 **
 !*/
 !*.*
-.vscode/**
+.vscode
 *.dat
 !Makefile
 vgcore.*
+*.o
