@@ -6,6 +6,7 @@ Cliente de RPC que simula las operaciones de varios clientes del servidor de log
 #include <sys/times.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <string.h>
 #include "util.h"
 #include "sislog.h"
 
@@ -76,6 +77,7 @@ void *Cliente(datos_hilo *p) {
             token = strtok_r(NULL, ":", &loc);
             evt.nivel = atoi(token);
             token = strtok_r(NULL, ":", &loc);
+            evt.msg = (char*) malloc(sizeof(char) * TAMMSG);
             strcpy(evt.msg, token);
 
             // Mensaje de depuración
@@ -99,7 +101,7 @@ void *Cliente(datos_hilo *p) {
                     break;
             }
             log_debug(msg);
-            free(res);
+            //free(res);
         }
 
         clnt_destroy(cl);
@@ -107,43 +109,39 @@ void *Cliente(datos_hilo *p) {
     return NULL;
 }
 
-int main(int argc,char *argv[])
-{
-    register int i;    // Indice para bucles
-    pthread_t *th;
-    datos_hilo *q;
-    FILE *fp;
+int main(int argc,char *argv[]) {
+    register int i;
+    pthread_t* th;
+    datos_hilo* q;
+    FILE* fp;
     char msg[TAMLINEA * 2];
 
-    if (argc != 4)
-    {
-        fprintf(stderr,"Forma de uso: %s <numero_clientes> <ip_serv_sislog> <fich_eventos>\n",argv[0]);
+    if (argc != 4) {
+        fprintf(stderr, "Forma de uso: %s <numero_clientes> <ip_serv_sislog> <fich_eventos>\n", argv[0]);
         exit(1);
     }
-    if (atoi((char *) argv[1]) <= 0)
-    {
-        fprintf(stderr,"El parametro <numero_clientes> debe ser un entero positivo\n");
+
+    if (atoi((char *) argv[1]) <= 0) {
+        fprintf(stderr, "El parametro <numero_clientes> debe ser un entero positivo\n");
         exit(3);
     }
+
     ip_sislog = strdup(argv[2]);
-    if (!valida_ip(argv[2]))
-    {
+    if (!valida_ip(argv[2])) {
         fprintf(stderr, "La IP introducida no es valida\n");
         exit(4);
     }
     num_clientes = atoi(argv[1]);
 
     // Reservamos memoria para los objetos de datos de hilo
-    th = (pthread_t *) malloc(sizeof(pthread_t)*num_clientes);
-    if (th == NULL)
-    {
+    th = (pthread_t*) malloc(sizeof(pthread_t) * num_clientes);
+    if (th == NULL) {
         sprintf(msg, "Error: no hay memoria suficiente para los objetos de datos de hilo\n");
         log_debug(msg);
         exit(5);
     }
 
-    if ((fp=fopen(argv[3],"r"))==NULL)
-    {
+    if ((fp = fopen(argv[3],"r")) == NULL) {
         perror("Error al abrir el fichero de eventos");
         exit(6);
     }
@@ -151,15 +149,17 @@ int main(int argc,char *argv[])
     // Creación de un hilo para cada cliente. Estos sí reciben como parámetro
     // un puntero a entero que será su id_cliente. Se crea dinámicamente uno
     // para cada hilo y se le asigna el contador del bucle
-    for (i = 0; i < num_clientes; i++)
-    {
-        // TODO: Rellenar (4)
+    for (i = 0; i < num_clientes; i++) {
+        q = (datos_hilo*) malloc(sizeof(datos_hilo));
+        check_null(q, "No hay memoria suficiente para los datos del hilo");
+        q -> fp = fp;
+        q -> id_cliente = i;
+        check_error(pthread_create(&th[i], NULL, (void *) Cliente, q), "pthread_create");
     }
 
     // main espera a que terminen todos los buques
-    for (i = 0; i < num_clientes; i++)
-    {
-        pthread_join(th[i],NULL);
+    for (i = 0; i < num_clientes; i++) {
+        pthread_join(th[i], NULL);
     }
     free(th);
 }

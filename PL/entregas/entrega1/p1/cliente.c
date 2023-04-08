@@ -49,8 +49,7 @@ FILE *fp = NULL;
 
 pthread_mutex_t file_read_mutex;
 
-void procesa_argumentos(int argc, char *argv[])
-{
+void procesa_argumentos(int argc, char *argv[]) {
 	if (argc != 6) {
 		printf("Uso: %s <ip_sislog> <puerto_sislog> <t|u> <nhilos> <fich_eventos>\n", argv[0]);
 		exit(EXIT_SUCCESS);
@@ -74,14 +73,13 @@ void procesa_argumentos(int argc, char *argv[])
 	check_null(fp, "Error al abrir el fichero de eventos");
 }
 
-void salir_bien(int s)
-{
+void salir_bien(int s) {
+	pthread_mutex_destroy(&file_read_mutex);
 	fclose(fp);
 	exit(0);
 }
 
-void *hilo_lector(datos_hilo *p)
-{
+void *hilo_lector(datos_hilo *p) {
 	int enviados;
 	char buffer[TAMLINEA];
 	char *s = NULL;

@@ -327,8 +327,7 @@ int main(int argc, char *argv[]) {
     inicializar_cola(&cola_eventos, tam_cola); // Inicializamos la cola
 
     // Creamos cada uno de los hilos de atención de peticiones
-    for (i = 0; i < num_hilos_aten; i++)
-    {
+    for (i = 0; i < num_hilos_aten; i++) {
         // Creamos el objeto de datos de hilo
         q = (param_hilo_aten *) malloc(sizeof(param_hilo_aten));
         q -> s = sock_pasivo;
@@ -339,8 +338,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Y creamos cada uno de los hilos trabajadores
-    for (i = 0; i < num_hilos_work; i++)
-    {
+    for (i = 0; i < num_hilos_work; i++) {
         // Creamos el objeto de datos de hilo
         id = (int *) malloc(sizeof(int));
         *id = i;

@@ -79,17 +79,16 @@ void p_exit_error(char* msg) {
 }
 
 // Función de utilidad para volcar el contenido de un array de contadores
-void mostrar_recuento_eventos(int nfils, int ncols, char** filas, char** columnas,int** valores)
-{
+void mostrar_recuento_eventos(int nfils, int ncols, char** filas, char** columnas, int** valores) {
 	register int i, j;
 	printf("*****************  RECUENTO EVENTOS  *******************\n");
 
 	printf("\t");
-	for (i=0;i<ncols;i++) printf("%s\t",columnas[i]);
+	for(i = 0; i < ncols; i++) printf("%s\t", columnas[i]);
 	printf("\n");
-	for (i=0;i<nfils;i++) {
-		printf("%s\t",filas[i]);
-		for (j=0;j<ncols;j++) printf("%d\t",valores[i][j]);
+	for(i = 0; i < nfils; i++) {
+		printf("%s\t", filas[i]);
+		for (j = 0; j < ncols; j++) printf("%d\t", valores[i][j]);
 		printf("\n");
 	}
 }

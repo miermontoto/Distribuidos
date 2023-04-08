@@ -12,8 +12,8 @@ int inicializado = 0;
 int** contabilidad_eventos;
 
 // Nombres de ficheros, de facilidades y de niveles
-int numfacilities = MAXFACILITIES;
-int numlevels = MAXLEVELS;
+int numfacilities;
+int numlevels;
 
 char* facilities_file_names[MAXFACILITIES] = {
     "fac00.dat",
@@ -58,7 +58,7 @@ char* level_names[MAXLEVELS] = {
 // Esta función es llamada internamente, no por el cliente
 // por lo que no hace falta verificar si los parámetros están
 // dentro de los límites
-void inicializar_matriz_eventos(int **p,int numfac,int numlevels) {
+void inicializar_matriz_eventos(int **p, int numfac, int numlevels) {
     register int i, j;
 
     for (i = 0; i < numfac; i++) {
@@ -66,7 +66,7 @@ void inicializar_matriz_eventos(int **p,int numfac,int numlevels) {
     }
 }
 
-void init() {
+int init() {
     register int i;
 
     // Si no estaba ya inicializada, se reserva espacio de memoria para
@@ -79,7 +79,9 @@ void init() {
         }
         inicializar_matriz_eventos(contabilidad_eventos, numfacilities, numlevels);
         inicializado = 1;
+        return CIERTO;
     }
+    return FALSO;
 }
 
 
@@ -90,16 +92,44 @@ void init() {
 Resultado* inicializar_sislog_1_svc(faclevel* q, struct svc_req* pet) {
     static Resultado r;
 
+    if (q -> facilidad > MAXFACILITIES) {
+        r.caso = 1;
+        r.Resultado_u.msg = "ERROR: Al inicializar sislog. El numero maximo de facilidades no puede ser <=0";
+        return &r;
+    }
+
+    if (q -> nivel > MAXLEVELS) {
+        r.caso = 1;
+        r.Resultado_u.msg = "ERROR: Al inicializar sislog. El numero maximo de niveles no puede ser <=0";
+        return &r;
+    }
+
     if (q -> facilidad <= 0) {
         r.caso = 1;
         r.Resultado_u.msg = "ERROR: Al inicializar sislog. El numero maximo de facilidades no puede ser <=0";
+        return &r;
     }
-    check_error(q -> nivel, "Número de nivel inválido");
 
-    // Antes de retornar, para depuración, mostramos por pantalla la matriz de
-    // contadores llamando a la función mostrar_recuento_eventos (util.c)
-    mostrar_recuento_eventos(q -> facilidad, q -> nivel,
-        facilities_names, level_names, contabilidad_eventos);
+    if (q -> nivel <= 0) {
+        r.caso = 1;
+        r.Resultado_u.msg = "ERROR: Al inicializar sislog. El numero maximo de niveles no puede ser <=0";
+        return &r;
+    }
+
+    numfacilities = q -> facilidad;
+    numlevels = q -> nivel;
+
+    if(init()) {
+        // Antes de retornar, para depuración, mostramos por pantalla la matriz de
+        // contadores llamando a la función mostrar_recuento_eventos (util.c)
+        mostrar_recuento_eventos(q -> facilidad, q -> nivel,
+            facilities_names, level_names, contabilidad_eventos);
+        r.caso = 0;
+        r.Resultado_u.valor = 0;
+    } else {
+        r.caso = 1;
+        r.Resultado_u.msg = "ERROR: Al inicializar sislog. Ya estaba inicializado";
+    }
     return &r;
 }
 
@@ -145,6 +175,9 @@ Resultado* registrar_evento_1_svc(eventsislog* evt, struct svc_req* peticion) {
         res.caso = 0;
     }
 
+    printf("\e[1;1H\e[2J");
+    mostrar_recuento_eventos(numfacilities, numlevels,
+        facilities_names, level_names, contabilidad_eventos);
     return(&res);
 }
 

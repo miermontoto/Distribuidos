@@ -58,8 +58,15 @@ int main(int argc, char *argv[]) {
 	params.nivel = max_niveles;
 
 	// Llamamos al procedimiento remoto inicializar_sislog
-	inicializar_sislog_1(&params, cl);
+	Resultado* r = inicializar_sislog_1(&params, cl);
+	check_null(r, "Error al inicializar sislog");
+
+	if(r -> caso == 1) {
+		fprintf(stderr, "%s\n", r -> Resultado_u.msg);
+		exit(6);
+	}
 
 	printf("Sislog inicializado\n");
+	clnt_destroy(cl);
 	return 0;
 }

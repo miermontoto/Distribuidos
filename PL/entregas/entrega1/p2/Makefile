@@ -16,13 +16,13 @@ todo : $(CLIENTE) $(SERVIDOR) $(INICIALIZADOR)
 # Generacion del cliente y del servidor
 #**************************************************
 
-$(CLIENTE) : sislog_clnt.o sislog_xdr.o cliente.o util.o
+$(CLIENTE): sislog_clnt.o sislog_xdr.o cliente.o util.o
 	$(CC) $(CFLAGS) -o $(CLIENTE) sislog_clnt.o sislog_xdr.o cliente.o util.o
 
-$(INICIALIZADOR) : sislog_clnt.o sislog_xdr.o inicializador_sislog.o util.o
+$(INICIALIZADOR): sislog_clnt.o sislog_xdr.o inicializador_sislog.o util.o
 	$(CC) $(CFLAGS) -o $(INICIALIZADOR) sislog_clnt.o sislog_xdr.o inicializador_sislog.o util.o
 
-$(SERVIDOR) : sislog_svc.o sislog_xdr.o servicios.o util.o
+$(SERVIDOR): sislog_svc.o sislog_xdr.o servicios.o util.o
 	$(CC) $(CFLAGS) -o $(SERVIDOR) sislog_svc.o sislog_xdr.o servicios.o util.o $(LDFLAGS)
 
 sislog_svc.o : sislog_svc.c sislog.h
@@ -49,15 +49,19 @@ util.o : util.c util.h
 sislog.h: sislog.x
 	$(RPCGEN) -C -h sislog.x &>/dev/null
 
+sislog.x:
+	rpcgen sislog.x
+
 
 #**************************************************
 # Utilidades
 #**************************************************
 
-limpia :
-	rm -f *.o
+clean:
+	rm -f *.o vgcore.*
 
-cleanall: limpia
+cleanall: clean
 	rm -f sislog_*
 	rm -f sislog.h
 	rm -f cliente servidor inicializador_sislog
+	rm -f *.dat
