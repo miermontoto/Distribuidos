@@ -167,7 +167,8 @@ Resultado* registrar_evento_1_svc(eventsislog* evt, struct svc_req* peticion) {
         fechahora[strlen(fechahora) - 1] = '\0';
 
         // Escribir la línea de registro en el fichero
-        fprintf(fp, "%s:%s:%s", fechahora, level_names[evt -> nivel], evt -> msg);
+        fprintf(fp, "%s:%s:%s:%s", facilities_names[evt -> facilidad],
+            level_names[evt -> nivel], fechahora, evt -> msg);
         check_error(fclose(fp), "Error al cerrar el fichero de registro");
 
         // Incrementar el contador de eventos para la facilidad y nivel dados

@@ -43,15 +43,15 @@ int main(int argc, char *argv[]) {
 		exit(3);
 	}
 
-	ip_sislog = strdup(argv[3]);
-	if(!valida_ip(argv[3])) {
+	ip_sislog = argv[3]; // No se copia la cadena para evitar problemas de memoria
+	if(!valida_ip(ip_sislog)) {
 		fprintf(stderr, "Error: El parámetro IP no es valido\n");
 		exit(4);
 	}
 
 	// Conectamos con el servidor RPC pasándole los parámetros apropiados
 	// para que inicialice sus estructuras de datos con el tamaño requerido
-	cl = clnt_create(ip_sislog, SISLOG, PRIMERA, "udp");
+	cl = clnt_create(ip_sislog, SISLOG, PRIMERA, "tcp");
 	check_null(cl, "clnt_create");
 
 	params.facilidad = max_facilidades;
@@ -60,6 +60,7 @@ int main(int argc, char *argv[]) {
 	// Llamamos al procedimiento remoto inicializar_sislog
 	Resultado* r = inicializar_sislog_1(&params, cl);
 	check_null(r, "Error al inicializar sislog");
+	clnt_destroy(cl);
 
 	if(r -> caso == 1) {
 		fprintf(stderr, "%s\n", r -> Resultado_u.msg);
@@ -67,6 +68,5 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("Sislog inicializado\n");
-	clnt_destroy(cl);
 	return 0;
 }

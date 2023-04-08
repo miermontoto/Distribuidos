@@ -38,6 +38,7 @@ void *Cliente(datos_hilo *p) {
     int id_cliente;
     char buffer[TAMLINEA];  // Buffer de lectura de lineas del fichero de eventos
     char msg[TAMLINEA * 2];
+    char aux[TAMLINEA * 2 / 3];
 
     Resultado *res;
     char* s;
@@ -45,21 +46,28 @@ void *Cliente(datos_hilo *p) {
     char* loc;
 
     eventsislog evt;
+    evt.msg = (char*) malloc(sizeof(char) * TAMMSG);
+    check_null(evt.msg, "malloc del mensaje de evento");
 
     id_cliente = p -> id_cliente; // Capturar el id del cliente en una variable local
     fp = p -> fp;
     free(p); // Ya no necesitamos el parámetro recibido, lo liberamos
 
+    // Creamos un handler de conexión con el servidor RPC
+    // y comprobamos que se ha creado correctamente
+    //
+    // NOTA: se crea un único handler para cada hilo cliente, de
+    // forma que se crea y se destruye el handler una única vez
+    // para evitar pérdidas de memoria.
+    cl = clnt_create(ip_sislog, SISLOG, PRIMERA, "tcp");
+    if (cl == NULL) {
+        clnt_pcreateerror(ip_sislog);
+        clnt_destroy(cl);
+        exit(1);
+    }
+
     // Bucle de lectura de eventos
     do {
-        // Creamos un handler de conexión con el servidor RPC
-        // y comprobamos que se ha creado correctamente
-        cl = clnt_create(ip_sislog, SISLOG, PRIMERA, "tcp");
-        if (cl == NULL) {
-            clnt_pcreateerror(ip_sislog);
-            exit(1);
-        }
-
         // Leemos mediante exclusión la siguiente línea del fichero cuyo *FILE
         // recibimos en uno de los campos de de la estructura datos_hilo
         bzero(buffer, TAMLINEA);
@@ -77,7 +85,6 @@ void *Cliente(datos_hilo *p) {
             token = strtok_r(NULL, ":", &loc);
             evt.nivel = atoi(token);
             token = strtok_r(NULL, ":", &loc);
-            evt.msg = (char*) malloc(sizeof(char) * TAMMSG);
             strcpy(evt.msg, token);
 
             // Mensaje de depuración
@@ -88,24 +95,23 @@ void *Cliente(datos_hilo *p) {
             // y liberar seguidamente las estructuras de datos utilizadas
             res = registrar_evento_1(&evt, cl);
             check_null(res, "Error al llamar al servidor RPC");
-            sprintf(msg, "Cliente %d recibe respuesta. Caso: %d", id_cliente, res -> caso);
+            sprintf(aux, "Cliente %d recibe respuesta. Caso: %d", id_cliente, res -> caso);
             switch(res -> caso) {
                 case 0:
-                    sprintf(msg, "%s, Valor: %d\n", msg, res -> Resultado_u.valor);
+                    sprintf(msg, "%s, Valor: %d\n", aux, res -> Resultado_u.valor);
                     break;
                 case 1:
-                    sprintf(msg, "%s, Mensaje: %s\n", msg, res -> Resultado_u.msg);
+                    sprintf(msg, "%s, Mensaje: %s\n", aux, res -> Resultado_u.msg);
                     break;
                 default:
-                    sprintf(msg, "%s, Error desconocido\n", msg);
+                    sprintf(msg, "%s, Error desconocido\n", aux);
                     break;
             }
             log_debug(msg);
-            //free(res);
         }
-
-        clnt_destroy(cl);
     } while(s);
+    free(evt.msg);
+    clnt_destroy(cl);
     return NULL;
 }
 
@@ -126,8 +132,8 @@ int main(int argc,char *argv[]) {
         exit(3);
     }
 
-    ip_sislog = strdup(argv[2]);
-    if (!valida_ip(argv[2])) {
+    ip_sislog = argv[2];
+    if (!valida_ip(ip_sislog)) {
         fprintf(stderr, "La IP introducida no es valida\n");
         exit(4);
     }
@@ -141,7 +147,9 @@ int main(int argc,char *argv[]) {
         exit(5);
     }
 
-    if ((fp = fopen(argv[3],"r")) == NULL) {
+    // fp = fopen(argv[3], "r");
+    // check_null(fp, "Error al abrir el fichero de eventos");
+    if ((fp = fopen(argv[3], "r")) == NULL) {
         perror("Error al abrir el fichero de eventos");
         exit(6);
     }
