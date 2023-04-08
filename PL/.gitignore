@@ -6,3 +6,4 @@
 !Makefile
 vgcore.*
 *.o
+!estadis
