@@ -58,7 +58,7 @@ void insertar_dato_cola(Cola *cola, dato_cola * dato)
 
 dato_cola* obtener_dato_cola(Cola *cola)
 {
-    dato_cola *p;
+    dato_cola* p = NULL;
 
     check_null(cola, "cola == NULL");
     check_null(cola -> datos, "cola->datos == NULL");

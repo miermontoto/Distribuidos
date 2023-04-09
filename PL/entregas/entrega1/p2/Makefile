@@ -10,19 +10,20 @@ SERVIDOR=servidor
 INICIALIZADOR=inicializador_sislog
 
 todo : $(CLIENTE) $(SERVIDOR) $(INICIALIZADOR)
+all : todo # alias
 
 #**************************************************
 # Generacion del cliente y del servidor
 #**************************************************
 
 $(CLIENTE): sislog_clnt.o sislog_xdr.o cliente.o util.o
-	$(CC) $(CFLAGS) -o $(CLIENTE) sislog_clnt.o sislog_xdr.o cliente.o util.o
+	$(CC) $(CFLAGS) -o $(CLIENTE) sislog_clnt.o sislog_xdr.o cliente.o util.o $(LDFLAGS)
 
 $(INICIALIZADOR): sislog_clnt.o sislog_xdr.o inicializador_sislog.o util.o
 	$(CC) $(CFLAGS) -o $(INICIALIZADOR) sislog_clnt.o sislog_xdr.o inicializador_sislog.o util.o
 
 $(SERVIDOR): sislog_svc.o sislog_xdr.o servicios.o util.o
-	$(CC) $(CFLAGS) -o $(SERVIDOR) sislog_svc.o sislog_xdr.o servicios.o util.o $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $(SERVIDOR) sislog_svc.o sislog_xdr.o servicios.o util.o
 
 sislog_svc.o: sislog.h sislog_svc.c
 	$(CC) $(CFLAGS) -c sislog_svc.c

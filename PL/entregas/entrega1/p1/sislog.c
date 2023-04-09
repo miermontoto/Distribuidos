@@ -180,7 +180,7 @@ void* Worker(int* id) {
         facilidad = evt -> facilidad - '0';
         nivel = evt -> nivel - '0';
 
-        check_error(pthread_mutex_lock(&mfp[facilidad]), "Error al bloquear el mutex");
+        p_check_error(pthread_mutex_lock(&mfp[facilidad]), "Error al bloquear el mutex");
 
         fp = fopen(facilities_file_names[facilidad], "a");
         p_check_null(fp, "Error al abrir el fichero de registro correspondiente");
@@ -244,6 +244,7 @@ void *AtencionPeticiones(param_hilo_aten *q) {
             recibidos = recvfrom(s, buffer, TAMMSG, 0, (struct sockaddr *) &d_cliente, &l_dir);
             p_check_error(recibidos, "Error en el recvfrom");
         }
+
         // Una vez recibido el mensaje, es necesario separar sus partes,
         // guardarlos en la estructura adecuada, y poner esa estructura en la cola
         // de sincronización.

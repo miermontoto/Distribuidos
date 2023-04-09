@@ -20,8 +20,8 @@
 // tipo de datos que recibiran los hilos lectores
 struct datos_hilo
 {
-	FILE *fp;
-	struct sockaddr *dserv;
+	FILE* fp;
+	struct sockaddr* dserv;
 };
 typedef struct datos_hilo datos_hilo;
 
@@ -30,7 +30,7 @@ typedef struct datos_hilo datos_hilo;
 //
 
 // IP del proceso syslog
-char *ip_syslog = NULL;
+char* ip_syslog = NULL;
 
 // Puerto en el que espera el proceso syslog los
 int puerto_syslog;
@@ -38,18 +38,20 @@ int puerto_syslog;
 // Numero de hilos lectores
 int nhilos;
 
+pthread_t* th = NULL;
+
 // Es o no orientado a conexion
 unsigned short es_stream = CIERTO;
 
 // nombre del fichero fuente de eventos
-char *fich_eventos = NULL;
+char* fich_eventos = NULL;
 
 // handler de archivo
-FILE *fp = NULL;
+FILE* fp = NULL;
 
 pthread_mutex_t file_read_mutex;
 
-void procesa_argumentos(int argc, char *argv[]) {
+void procesa_argumentos(int argc, char* argv[]) {
 	if (argc != 6) {
 		printf("Uso: %s <ip_sislog> <puerto_sislog> <t|u> <nhilos> <fich_eventos>\n", argv[0]);
 		exit(EXIT_SUCCESS);
@@ -58,6 +60,7 @@ void procesa_argumentos(int argc, char *argv[]) {
 	ip_syslog = argv[1];
 	if(!valida_ip(ip_syslog)) exit_error("IP inválida");
 
+	if(!valida_numero(argv[2])) exit_error("Puerto inválido");
 	puerto_syslog = atoi(argv[2]);
 	if(puerto_syslog < 1024 || puerto_syslog > 65535) exit_error("Puerto inválido");
 
@@ -65,6 +68,7 @@ void procesa_argumentos(int argc, char *argv[]) {
 	else if(strcmp(argv[3], "u") == 0) es_stream = FALSO;
 	else exit_error("Tipo de socket inválido");
 
+	if(!valida_numero(argv[4])) exit_error("Número de hilos inválido");
 	nhilos = atoi(argv[4]);
 	check_value(nhilos, "Número de hilos inválido", 1);
 
@@ -73,14 +77,15 @@ void procesa_argumentos(int argc, char *argv[]) {
 	check_null(fp, "Error al abrir el fichero de eventos");
 }
 
-void salir_bien(int s) {
+void salir_bien(int s) { // No se comprueban errores porque se está saliendo
 	pthread_mutex_destroy(&file_read_mutex);
 	fclose(fp);
-	exit(0);
+	free(th);
+	exit(EXIT_SUCCESS);
 }
 
-void *hilo_lector(datos_hilo *p) {
-	int enviados;
+void* hilo_lector(datos_hilo *p) {
+	//int enviados;
 	char buffer[TAMLINEA];
 	char *s = NULL;
 	int sock_dat;
@@ -101,34 +106,32 @@ void *hilo_lector(datos_hilo *p) {
 				sock_dat = socket(AF_INET, SOCK_STREAM, 0);
 				check_error(sock_dat, "Error en socket TCP");
 				check_error(connect(sock_dat, p -> dserv, sizeof(struct sockaddr_in)), "Error en connect");
-				enviados = send(sock_dat, s, strlen(s), 0);
-				check_error(enviados, "Error en send");
+				check_error(send(sock_dat, s, strlen(s), 0), "Error en el send");
 			} else { // Enviar la línea por un socket UDP
 				sock_dat = socket(AF_INET, SOCK_DGRAM, 0);
 				check_error(sock_dat, "Error en socket UDP");
 				check_error(sendto(sock_dat, s, strlen(s), 0, p -> dserv, sizeof(struct sockaddr_in)), "Error en sendto");
 			}
 
-			close(sock_dat);
+			check_error(close(sock_dat), "Error al cerrar el socket de datos");
 			printf("%s", s); // Para depuración, imprimimos la línea que hemos enviado
 		}
 	} while (s); // Mientras no se llegue al final del fichero
+
+	return NULL;
 }
 
 
 // La función main crea los hilos lector, pasándoles los parámetros necesarios,
 // y espera a que terminen
-void main(int argc, char* argv[]) {
-
+int main(int argc, char* argv[]) {
 	register int i;
-	pthread_t *th = NULL;
 	datos_hilo q;
 	struct sockaddr_in d_serv;
-	socklen_t ldir;
-	char buffer[50];
+	//socklen_t ldir;
+	//char buffer[50];
 
 	signal(SIGINT, salir_bien); // Instalar la rutina de tratamiento de la señal SIGINT
-
 	procesa_argumentos(argc, argv); // Procesar los argumentos de la línea de comandos
 
 	printf("IP servidor %s, es_stream=%d\n", ip_syslog, es_stream);
@@ -142,23 +145,23 @@ void main(int argc, char* argv[]) {
 
 	// Incicializamos los datos que le vamos a pasar como parámetro a los hilo_lector
 	// (se pasa a todos el mismo parámetro)
+	// Se utiliza el inet_pton tanto para guardar la IP como para comprobar que es válida.
 	q.fp = fp;
 	q.dserv = (struct sockaddr *) &d_serv;
 	check_value(inet_pton(AF_INET, ip_syslog, &d_serv.sin_addr), "Error en inet_pton", 1);
 	d_serv.sin_port = htons(puerto_syslog);
 	d_serv.sin_family = AF_INET;
 
-	pthread_mutex_init(&file_read_mutex, NULL);
+	check_error(pthread_mutex_init(&file_read_mutex, NULL), "Error en pthread_mutex_init");
 
-	for (i = 0; i < nhilos; i++) {
-		// Lanzamos el hilo lector
+	for (i = 0; i < nhilos; i++) { // Lanzar hilos lectores
 		check_error(pthread_create(&th[i], NULL, (void *) hilo_lector, (void *) &q), "Error al lanzar el hilo lector");
 	}
 
 	// Una vez lanzados todos, hacemos un join sobre cada uno de ellos
-	for (i = 0; i < nhilos; i++) {
-		pthread_join(th[i], NULL);
-	}
+	for (i = 0; i < nhilos; i++) pthread_join(th[i], NULL);
 
-	check_error(fclose(fp), "Error al cerrar el fichero"); // Al llegar aquí, todos los hilos han terminado
+	// Al llegar aquí, todos los hilos han terminado, se limpia y se sale.
+	salir_bien(0);
+	return 0;
 }

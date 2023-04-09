@@ -130,6 +130,7 @@ Resultado* inicializar_sislog_1_svc(faclevel* q, struct svc_req* pet) {
         r.caso = 1;
         r.Resultado_u.msg = "ERROR: Al inicializar sislog. Ya estaba inicializado";
     }
+
     return &r;
 }
 
@@ -167,7 +168,7 @@ Resultado* registrar_evento_1_svc(eventsislog* evt, struct svc_req* peticion) {
         fechahora[strlen(fechahora) - 1] = '\0';
 
         // Escribir la línea de registro en el fichero
-        fprintf(fp, "%s:%s:%s:%s", facilities_names[evt -> facilidad],
+        fprintf(fp, "%s:%s:%s:%s\n", facilities_names[evt -> facilidad],
             level_names[evt -> nivel], fechahora, evt -> msg);
         check_error(fclose(fp), "Error al cerrar el fichero de registro");
 
@@ -176,9 +177,14 @@ Resultado* registrar_evento_1_svc(eventsislog* evt, struct svc_req* peticion) {
         res.caso = 0;
     }
 
+    // Puesto que `estadis` no funciona y no se podría observar
+    // el estado de la matriz de contadores después de la inserción,
+    // se muestra manualmente la matriz por pantalla después de
+    // limpiar la consola.
     printf("\e[1;1H\e[2J");
     mostrar_recuento_eventos(numfacilities, numlevels,
         facilities_names, level_names, contabilidad_eventos);
+
     return(&res);
 }
 
@@ -202,6 +208,7 @@ Resultado* obtener_total_facilidad_1_svc(int* fac, struct svc_req* peticion) {
             res.Resultado_u.valor += contabilidad_eventos[*fac][i];
         }
     }
+
     return(&res);
 }
 
@@ -222,6 +229,7 @@ Resultado* obtener_total_nivel_1_svc(int* level, struct svc_req* peticion) {
             res.Resultado_u.valor += contabilidad_eventos[i][*level];
         }
     }
+
     return(&res);
 }
 
@@ -244,6 +252,7 @@ Resultado* obtener_total_facilidadnivel_1_svc(faclevel* q, struct svc_req* petic
         res.caso = 0;
         res.Resultado_u.valor = contabilidad_eventos[q -> facilidad][q -> nivel];
     }
+
     return(&res);
 }
 
@@ -254,6 +263,7 @@ Resultado* obtener_num_facilidades_1_svc(void* q, struct svc_req* peticion) {
 
     res.caso = 0;
     res.Resultado_u.valor = numfacilities;
+
     return(&res);
 }
 
@@ -263,6 +273,7 @@ Resultado * obtener_num_niveles_1_svc(void* q, struct svc_req* peticion) {
 
     res.caso = 0;
     res.Resultado_u.valor = numlevels;
+
     return(&res);
 }
 
@@ -274,6 +285,7 @@ Resultado* obtener_nombre_facilidad_1_svc(int* n, struct svc_req* peticion) {
     if ((*n < 0) || (*n > (numfacilities - 1))) res.Resultado_u.msg = "ERROR en id facilidad";
     else res.Resultado_u.msg = facilities_names[*n];
     res.caso = 1;
+
     return(&res);
 }
 
@@ -285,5 +297,6 @@ Resultado* obtener_nombre_nivel_1_svc(int* n, struct svc_req* peticion) {
     if ((*n < 0) || (*n > (numlevels - 1))) res.Resultado_u.msg = "ERROR en id nivel";
     else res.Resultado_u.msg = level_names[*n];
     res.caso = 1;
+
     return(&res);
 }

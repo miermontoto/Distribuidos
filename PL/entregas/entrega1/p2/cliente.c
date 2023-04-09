@@ -30,20 +30,20 @@ typedef struct datos_hilo datos_hilo;
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void *Cliente(datos_hilo *p) {
+void* Cliente(datos_hilo* p) {
     // Implementación del hilo que genera los eventos que se envían al
     // servidor via RPC
-    CLIENT* cl;
-    FILE* fp;
+    CLIENT* cl = NULL;
+    FILE* fp = NULL;
     int id_cliente;
     char buffer[TAMLINEA];  // Buffer de lectura de lineas del fichero de eventos
     char msg[TAMLINEA * 2];
     char aux[TAMLINEA * 2 / 3];
 
-    Resultado *res;
-    char* s;
-    char* token;
-    char* loc;
+    Resultado *res = NULL;
+    char* s = NULL;
+    char* token = NULL;
+    char* loc = NULL;
 
     eventsislog evt;
     evt.msg = (char*) malloc(sizeof(char) * TAMMSG);
@@ -80,12 +80,28 @@ void *Cliente(datos_hilo *p) {
         // el mensaje de la invocación remota al sislog
         if (s != NULL) {
             // Tokenizar cadena y rellenado de la estructura de datos
-            token = strtok_r(s, ":", &loc);
+            token = strtok_r(s, ":", &loc); // facilidad
+            if(!valida_numero(token)) {
+                sprintf(msg, "Error: facilidad inválida (%s)", token);
+                continue;
+            }
             evt.facilidad = atoi(token);
-            token = strtok_r(NULL, ":", &loc);
+
+            token = strtok_r(NULL, ":", &loc); // nivel
+            if(!valida_numero(token)) {
+                sprintf(msg, "Error: nivel inválido (%s)", token);
+                continue;
+            }
             evt.nivel = atoi(token);
-            token = strtok_r(NULL, ":", &loc);
+
+            token = strtok_r(NULL, ":", &loc); // mensaje
+            if(strlen(token) >= TAMMSG) {
+                sprintf(msg, "Error: mensaje demasiado largo");
+                continue;
+            }
             strcpy(evt.msg, token);
+            evt.msg[strcspn(evt.msg, "\r\n")] = '\0'; // Eliminar el salto de línea
+            // El salto de línea debe ser introducido por el servidor.
 
             // Mensaje de depuración
             sprintf(msg, "Cliente %d envia evento. Facilidad: %d, Nivel: %d, Texto: %s\n", id_cliente, evt.facilidad, evt.nivel, evt.msg);
@@ -117,9 +133,9 @@ void *Cliente(datos_hilo *p) {
 
 int main(int argc,char *argv[]) {
     register int i;
-    pthread_t* th;
-    datos_hilo* q;
-    FILE* fp;
+    pthread_t* th = NULL;
+    datos_hilo* q = NULL;
+    FILE* fp = NULL;
     char msg[TAMLINEA * 2];
 
     if (argc != 4) {
