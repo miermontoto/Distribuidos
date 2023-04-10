@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <errno.h>
 #include "util.h"
 
 // Función de utilidad que determina si los caracteres de una cadena son todos numericos
@@ -56,7 +57,8 @@ void check_value(int ret, char* msg, int val) {
 }
 
 void exit_error(char* msg) {
-	perror(msg);
+	if(errno == 0) fprintf(stderr, "%s\n", msg);
+	else perror(msg);
 	exit(EXIT_FAILURE);
 }
 

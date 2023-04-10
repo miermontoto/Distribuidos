@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+#include <errno.h>
 #include <arpa/inet.h>
 #include <pthread.h>
 #include "util.h"
@@ -53,7 +54,8 @@ void check_value(int ret, char* msg, int val) {
 }
 
 void exit_error(char* msg) {
-	perror(msg);
+	if(errno == 0) fprintf(stderr, "%s\n", msg);
+	else perror(msg);
 	exit(EXIT_FAILURE);
 }
 

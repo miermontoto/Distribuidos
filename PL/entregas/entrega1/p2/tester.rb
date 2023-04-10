@@ -75,4 +75,4 @@ test.each_line do |line|
 	end
 end
 
-puts "S: #{enviados}, R: #{recibidos} | %: #{recibidos.to_f / eventos.to_f * 100}, E: #{errores}"
+puts "S: #{enviados}, R: #{recibidos} | %: #{(recibidos.to_f / eventos.to_f * 100).round(2)}, E: #{errores}"

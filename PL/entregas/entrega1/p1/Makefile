@@ -10,7 +10,7 @@ cliente: cliente.c
 	$(CC) -o cliente cliente.c util.c $(CFLAGS)
 
 limpia:
-	-rm *.o
+	rm -f *.o
 
-cleanall:
-	-rm sislog cliente *.dat vgcore.*
+cleanall: limpia
+	rm -f sislog cliente *.dat vgcore.*

@@ -34,12 +34,12 @@ int main(int argc, char *argv[]) {
 	max_niveles = atoi(argv[2]);
 
 	if(max_facilidades <= 0 || max_facilidades > MAXFACILITIES) {
-		fprintf(stderr, "El parametro  <max_facilidades> debe ser >=0 y <=%d\n", MAXFACILITIES);
+		fprintf(stderr, "El parametro <max_facilidades> debe ser >=0 y <=%d\n", MAXFACILITIES);
 		exit(3);
 	}
 
 	if(max_niveles <= 0 || max_niveles > MAXLEVELS) {
-		fprintf(stderr,"El parametro  <max_levels> debe ser >=0 y <=%d\n", MAXLEVELS);
+		fprintf(stderr,"El parametro <max_levels> debe ser >=0 y <=%d\n", MAXLEVELS);
 		exit(3);
 	}
 
