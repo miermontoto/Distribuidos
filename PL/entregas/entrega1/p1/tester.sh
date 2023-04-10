@@ -37,7 +37,7 @@ echo "-------------------"
 
 pkill sislog
 pkill cliente
-sislog 7890 t 5 5 5 &
+sislog 7890 t 5 5 5 & &>/dev/null
 cliente 127.0.0.1 7890 t 5 eventos.txt &>/dev/null
 cliente 127.0.0.1 7890 t 5 rand.txt &>/dev/null
 cat fac01.dat

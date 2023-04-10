@@ -216,7 +216,7 @@ void *AtencionPeticiones(param_hilo_aten *q) {
     char *loc = NULL;
     dato_cola *p = NULL;
     int s;        // Variable local para almacenar el socket que se recibe como parámetro
-    int num_hilo; // Variable local para almacenar el numero de hilo que se recibe como parámetro
+    //int num_hilo; // Variable local para almacenar el numero de hilo que se recibe como parámetro
                   // (no usada, pero puedes usarla para imprimir mensajes de depuración)
 
     // Información de depuración
@@ -225,7 +225,7 @@ void *AtencionPeticiones(param_hilo_aten *q) {
 
     // Hacemos copia de los parámetros recibidos
     s = q -> s;
-    num_hilo = q -> num_hilo;
+    //num_hilo = q -> num_hilo;
     free(q); // y liberamos la memoria reservada para el parámetro
 
     while (1) { // Bucle infinito de atencion de mensajes

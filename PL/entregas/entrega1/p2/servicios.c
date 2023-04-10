@@ -148,6 +148,8 @@ Resultado* registrar_evento_1_svc(eventsislog* evt, struct svc_req* peticion) {
     char* fechahora;
     time_t timeraw;
 
+    check_null(evt, "ERROR: El evento es nulo");
+
     // Comprobar que el número de facilidad y nivel están dentro de los límites
     if ((evt -> facilidad < 0) || (evt -> facilidad > (numfacilities - 1))) {
         res.caso = 1;

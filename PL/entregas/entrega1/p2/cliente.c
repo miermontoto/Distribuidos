@@ -143,7 +143,7 @@ int main(int argc,char *argv[]) {
         exit(1);
     }
 
-    if (atoi((char *) argv[1]) <= 0) {
+    if (!valida_numero(argv[1])) {
         fprintf(stderr, "El parametro <numero_clientes> debe ser un entero positivo\n");
         exit(3);
     }
@@ -154,6 +154,7 @@ int main(int argc,char *argv[]) {
         exit(4);
     }
     num_clientes = atoi(argv[1]);
+    check_value(num_clientes, "Número inválido de clientes", 1);
 
     // Reservamos memoria para los objetos de datos de hilo
     th = (pthread_t*) malloc(sizeof(pthread_t) * num_clientes);

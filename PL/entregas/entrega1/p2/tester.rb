@@ -5,6 +5,10 @@ require "faker"
 # generar eventos aleatorios en un archivo de texto y utilizar
 # el programa "cliente" para enviarlos al servidor rpc.
 
+# Ejecución:
+# $ gem install faker
+# $ ruby tester.rb <max_facilidad> <max_nivel> [num_eventos] [num_threads]
+
 # La estructura de un evento es la siguiente:
 # <facilidad>:<nivel>:<mensaje>
 # Donde la facilidad y nivel son enteros y el mensaje es una cadena.
