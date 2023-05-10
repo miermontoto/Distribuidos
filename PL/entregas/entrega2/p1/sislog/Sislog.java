@@ -1,5 +1,16 @@
 package sislog;
 
+// Import necesario para escribir en fichero
+import java.io.FileWriter;
+// Imports necesarios para usar RMI
+import java.io.IOException;
+import java.rmi.Naming;
+// Import necesarios para obtener la fecha y hora actuales
+import java.util.Date;
+// Cola bloqueante para comunicar el hilo ReceptorEventos y los hilos Clasificador
+import java.util.concurrent.ArrayBlockingQueue;
+
+import com.rabbitmq.client.AMQP;
 // Imports necesarios para usar RabbitMQ
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -7,21 +18,6 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.AMQP;
-
-// Imports necesarios para usar RMI
-import java.io.IOException;
-import java.rmi.Naming;
-import java.rmi.RemoteException;
-
-// Import necesario para escribir en fichero
-import java.io.FileWriter;
-
-// Import necesarios para obtener la fecha y hora actuales
-import java.util.Date;
-
-// Cola bloqueante para comunicar el hilo ReceptorEventos y los hilos Clasificador
-import java.util.concurrent.ArrayBlockingQueue;
 
 // ===================================================================
 // Las dos clases siguientes son hilos que se ejecutarán de forma concurrente
@@ -36,7 +32,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 // Clase ReceptorEventos. Recibe mensajes por RabbitMQ, y los mete en la cola bloqueante
 // de eventos para que sean analizados y archivados por los hilos Clasificador
 class ReceptorEventos extends Thread {
-    private static final String NOMBRE_COLA_RABBIT = "juanfranciscoMM";
+    private static final String NOMBRE_COLA_RABBIT = "JuanFranciscoMM";
     private ArrayBlockingQueue<String> qevent;
 
     // El constructor recibe una referencia a las colas bloqueantes
@@ -65,17 +61,20 @@ class ReceptorEventos extends Thread {
                     // ************************************************************
 
                     // Convertir en cadena el mensaje recibido
-                    String evtmsg = new String(body, StandardCharsets.UTF_8);
+                    String evtmsg = new String(body, java.nio.charset.StandardCharsets.UTF_8);
                     System.out.println("ReceptorEventos: Recibido mensaje = " + evtmsg);
 
                     // Enviar mensaje a cola interna bloqueante
-                    qevent.put(evtmsg);
+                    try {
+                        qevent.put(evtmsg);
+                        System.out.println("ReceptorEventos: Mensaje enviado a cola interna");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             };
-            System.out.println("ReceptorEventos. Esperando llegada de eventos");
+            System.out.println("ReceptorEventos: Esperando llegada de eventos");
             channel.basicConsume(NOMBRE_COLA_RABBIT, true, consumer);
-            channel.close();
-            connection.close();
         } catch (Exception e) {  // No manejamos excepciones, simplemente abortamos
             e.printStackTrace();
             System.exit(7);
@@ -133,7 +132,7 @@ class Clasificador extends Thread {
                 FileWriter fw = new FileWriter(fac_file_names[fac], true);
                 fw.write(logmsg + "\n");
                 fw.close();
-                actev.contabiliza(fac, level);
+                actev.contabilizaEvento(fac, level);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -143,7 +142,6 @@ class Clasificador extends Thread {
 }
 
 
-// Clase principal que instancia el hilo de recepción y los hilos de clasificacion y los arranca
 // Clase principal que instancia el hilo de recepción y los hilos de clasificacion y los arranca
 public class Sislog {
     // Función main por la que arranca el programa
@@ -261,7 +259,7 @@ public class Sislog {
         // Creamos los hilos clasificadores, guardamos sus referencias en un array y los arrancamos
         clasificadores = new Clasificador[num_workers];
         for (int i = 0; i < num_workers; i++) {
-            clasificadores[i] = new Clasificador(cola_interna, actev, facilities_names, level_names, facilities_file_names);
+            clasificadores[i] = new Clasificador(actev, cola_interna, facilities_names, level_names, facilities_file_names);
             clasificadores[i].start();
         }
 

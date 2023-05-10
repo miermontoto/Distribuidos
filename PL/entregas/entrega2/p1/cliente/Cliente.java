@@ -3,6 +3,7 @@ package cliente;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 // Imports necesarios para RabbitMQ
 import com.rabbitmq.client.Channel;
@@ -10,7 +11,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
 public class Cliente {
-    private final static String NOMBRE_COLA = "juanfranciscoMM"
+    private static final String NOMBRE_COLA = "JuanFranciscoMM";
 
     // Función main por la que arranca el cliente
     public static void main(String[] argv) throws Exception {
@@ -56,13 +57,13 @@ public class Cliente {
     //  - El nombre del fichero con los eventos a enviar
     //
     // Una vez finaliza de leer todos los mensajes y enviarlos a la cola, termina
-    static void enviar_eventos(Channel channel, String fich_evt) throws IOException, InterruptedException {
+    static void enviar_eventos(Channel channel, String fich_evt) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(fich_evt));
         try {
             // Leer todas las líneas del fichero y enviarlas como mensajes
             String linea;
             while ((linea = br.readLine()) != null) {
-                channel.basicPublish("", NOMBRE_COLA, null, linea.getBytes("UTF-8"));
+                channel.basicPublish("", NOMBRE_COLA, null, linea.getBytes(StandardCharsets.UTF_8));
             }
             br.close();
         } catch (Exception e) {

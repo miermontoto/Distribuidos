@@ -5,42 +5,43 @@ package sislog;
 // se sincronizan entre sí mediante bloques synchronized (exclusión mutua)
 
 class ContabilidadEventos {
-    private int[][] val;            // Matriz de enteros que contabiliza los eventos recibidos
-    private int filas, columnas;    // Numero de filas (facilidades) y columnas (niveles) que tiene la matriz
+	private int[][] val;            // Matriz de enteros que contabiliza los eventos recibidos
+	private int filas, columnas;    // Numero de filas (facilidades) y columnas (niveles) que tiene la matriz
+	private static final Object MUTEX_OBJECT = new Object();
 
-    public ContabilidadEventos(int fils, int cols) {
+	public ContabilidadEventos(int fils, int cols) {
 		// Inicializador
 		filas = fils;
 		columnas = cols;
 		val = new int[fils][cols];
 		for (int i = 0; i < filas; i++) for (int j = 0; j < columnas; j++) val[i][j] = 0;
-    }
+	}
 
-    // Metodo que contabiliza un evento
-    void contabilizaEvento(int facilidad, int nivel) {
-        // Comprobar si facilidad y nivel están dentro de los limites del array
-        // Si no están no se hace nada. Si están, se incrementa el contador
-        // correspondiente en un bloque synchronized (exclusión mutua)
+	// Metodo que contabiliza un evento
+	void contabilizaEvento(int facilidad, int nivel) {
+		// Comprobar si facilidad y nivel están dentro de los limites del array
+		// Si no están no se hace nada. Si están, se incrementa el contador
+		// correspondiente en un bloque synchronized (exclusión mutua)
 
 		if(facilidad < 0 || facilidad >= filas || nivel < 0 || nivel >= columnas) return;
-		synchronized() { val[facilidad][nivel]++; }
-    }
+		synchronized(MUTEX_OBJECT) { val[facilidad][nivel]++; }
+	}
 
-    // Metodo que devuelve el número de eventos contabilizados para una facilidad y un nivel dados
-    int obtenerValorFacilidadNivel(int facilidad, int nivel) {
+	// Metodo que devuelve el número de eventos contabilizados para una facilidad y un nivel dados
+	int obtenerValorFacilidadNivel(int facilidad, int nivel) {
 		int ret;
 		// La lectura del contador debe hacerse sincronizada por si otro hilo
 		// lo está modificando
 
-		synchronized() { ret = val[facilidad][nivel]; }
+		synchronized(MUTEX_OBJECT) { ret = val[facilidad][nivel]; }
 		return ret;
-    }
+	}
 
-    int obtenerNumeroFacilidades() {
+	int obtenerNumeroFacilidades() {
 		return filas;
-    }
+	}
 
-    int obtenerNumeroNiveles() {
+	int obtenerNumeroNiveles() {
 		return columnas;
-    }
+	}
 }

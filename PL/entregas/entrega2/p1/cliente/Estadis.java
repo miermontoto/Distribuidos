@@ -1,14 +1,6 @@
 package cliente;
 
-// Imports necesarios para RabbitMQ
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-
-// Imports necesarios para RMI
-import java.io.IOException;
 import java.rmi.Naming;
-import java.rmi.RemoteException;
 
 // Imports necesarios para invocar via RMI métodos del sislog
 import sislog.SislogInterface;
@@ -28,7 +20,7 @@ public class Estadis {
         // =================================================
         // Parte principal, toda dentro de un try para capturar cualquier excepción
         try {
-            // TODO: Obtener por RMI el número de niveles (ncols) y facilidades (nfils)
+            // Obtener por RMI el número de niveles (ncols) y facilidades (nfils)
             evtserv = (SislogInterface) Naming.lookup("Sislog");
             nfils = evtserv.obtenerNumeroFacilidades();
             ncols = evtserv.obtenerNumeroNiveles();
@@ -40,20 +32,19 @@ public class Estadis {
             // que se obtienen por RMI)
             for(int i = 0; i < ncols; i++) {
                 System.out.printf("%s\t", evtserv.obtenerNombreNivel(i));
+            }
 
             System.out.println("TOTAL");
-            suma = 0;
-            for (int i = 0;i < nfils; i++) {
+            for (int i = 0; i < nfils; i++) {
                 // Para cada fila se imprime primero el nombre de la facilidad (obtenido por RMI)
                 // con un \t al final
-                // TODO: Rellenar
+                System.out.printf("%s\t", evtserv.obtenerNombreFacilidad(i));
                 suma = 0;
 
                 // Seguidamente se itera por cada columna (nivel) y se obtiene por RMI el valor del
                 // contador correspodiente a la facilidad y nivel actual (fila y columna)
                 for (int j = 0; j < ncols; j++) {
-                    // TODO: Rellenar
-                    // n = ...;
+                    n = evtserv.obtenerValorFacilidadNivel(j, i);
 
                     System.out.print(n+"\t");
                     suma += n;
@@ -67,13 +58,11 @@ public class Estadis {
             total = 0;
             for (int j = 0; j < ncols; j++) {
                 suma = 0; // Para computar el total por columnas
-                for (int i=0;i<nfils;i++) {
-                    // TODO: RMI y actualización de suma
-                    |
-                    |
+                for (int i = 0; i < nfils; i++) {
+                    suma += evtserv.obtenerValorFacilidadNivel(j, i);
                 }
                 System.out.print(suma+"\t");
-                total+=suma;
+                total += suma;
             }
             System.out.println(total);
         } catch (Exception e) {

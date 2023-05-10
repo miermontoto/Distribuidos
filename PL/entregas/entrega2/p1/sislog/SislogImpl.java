@@ -1,7 +1,6 @@
 package sislog;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.concurrent.ArrayBlockingQueue;
 
 /*
 La clase SislogImpl implementa el interfaz SislogInterface:
@@ -25,7 +24,7 @@ obtenerNombreNivel(): obtiene el nobre del nivel (severidad)
 */
 
 public class SislogImpl extends UnicastRemoteObject implements SislogInterface {
-    private ContabilidadEventos accountev;  // Objeto que registra la contabilidad de los eventos recibidos
+    private transient ContabilidadEventos accountev;  // Objeto que registra la contabilidad de los eventos recibidos
     private String[] fac_names;             // Nombres de facilidades
     private String[] level_names;           // Nombres de niveles
 
@@ -37,7 +36,7 @@ public class SislogImpl extends UnicastRemoteObject implements SislogInterface {
     }
 
     @Override
-    public int obtenerValorFacilidadNivel(int facilidad, int nivel) throws RemoteException {
+    public int obtenerValorFacilidadNivel(int facilidad, int nivel) {
         return accountev.obtenerValorFacilidadNivel(facilidad, nivel);
     }
 
@@ -69,6 +68,8 @@ public class SislogImpl extends UnicastRemoteObject implements SislogInterface {
         }
     }
 
+    // Se añaden métodos equals() y hashCode() para que el objeto pueda ser
+    // eliminar avisos de SonarLint.
     @Override
     public boolean equals(Object o) {
         if (o instanceof SislogImpl) {

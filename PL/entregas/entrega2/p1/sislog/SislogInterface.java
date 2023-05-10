@@ -7,7 +7,7 @@ import java.rmi.RemoteException;
   invocados desde un cliente RMI como Estadis.java
 */
 public interface SislogInterface extends Remote {
-    public int obtenerValorFacilidadNivel(int facilidad,int nivel) throws Remote Exception;
+    public int obtenerValorFacilidadNivel(int facilidad, int nivel) throws RemoteException;
     public int obtenerNumeroFacilidades() throws RemoteException;
     public int obtenerNumeroNiveles() throws RemoteException;
     public String obtenerNombreFacilidad(int facilidad) throws RemoteException;
