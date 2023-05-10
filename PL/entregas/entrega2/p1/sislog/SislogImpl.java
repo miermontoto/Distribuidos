@@ -6,20 +6,20 @@ import java.util.concurrent.ArrayBlockingQueue;
 /*
 La clase SislogImpl implementa el interfaz SislogInterface:
 
-obtenerValorFacilidadNivel(): que será invocado desde un cliente RMI 
-    para obtener el número de eventos de un determinado nivel correspondientes 
+obtenerValorFacilidadNivel(): que será invocado desde un cliente RMI
+    para obtener el número de eventos de un determinado nivel correspondientes
     a una determinada facilidad
 
 obtenerNumeroFacilidades(): devuelve el numero de facilidades
     con los cuales puede trabajar el sislog.
 
-obtenerNumeroNiveles(): devuelve el numero de niveles de severidad 
+obtenerNumeroNiveles(): devuelve el numero de niveles de severidad
     con los cuales puede trabajar el sislog.
 
 obtenerNombreFacilidad(): obtiene el nombre de la facilidad
     cuyo id le pasamos como argumento.
 
-obtenerNombreNivel(): obtiene el nobre del nivel (severidad) 
+obtenerNombreNivel(): obtiene el nobre del nivel (severidad)
     cuyo id le pasamos como argumento.
 
 */
@@ -37,37 +37,49 @@ public class SislogImpl extends UnicastRemoteObject implements SislogInterface {
     }
 
     @Override
-    public int obtenerValorFacilidadNivel(int facilidad,int nivel) throws RemoteException {
-        // A RELLENAR
-        |
-        |
+    public int obtenerValorFacilidadNivel(int facilidad, int nivel) throws RemoteException {
+        return accountev.obtenerValorFacilidadNivel(facilidad, nivel);
     }
 
     @Override
     public int obtenerNumeroFacilidades() throws RemoteException {
-        // A RELLENAR
-        |
-        |
+        return accountev.obtenerNumeroFacilidades();
     }
 
     @Override
     public int obtenerNumeroNiveles() throws RemoteException {
-        // A RELLENAR
-        |
-        |
+        return accountev.obtenerNumeroNiveles();
     }
 
     @Override
     public String obtenerNombreFacilidad(int facilidad) throws RemoteException {
-        // A RELLENAR
-        |
-        |
+        try {
+            return fac_names[facilidad];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new RemoteException("Facilidad no encontrada");
+        }
     }
 
     @Override
     public String obtenerNombreNivel(int nivel) throws RemoteException {
-        // A RELLENAR
-        |
-        |
+        try {
+            return level_names[nivel];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new RemoteException("Nivel no encontrado");
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof SislogImpl) {
+            SislogImpl other = (SislogImpl) o;
+            return accountev.equals(other.accountev);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return accountev.hashCode();
     }
 }

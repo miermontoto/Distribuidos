@@ -33,25 +33,24 @@ import java.util.concurrent.ArrayBlockingQueue;
 // ===================================================================
 
 
-// Clase ReceptorEventos. Recibe mensajes por RabbitMQ, y los mete en la cola bloqueante 
+// Clase ReceptorEventos. Recibe mensajes por RabbitMQ, y los mete en la cola bloqueante
 // de eventos para que sean analizados y archivados por los hilos Clasificador
 class ReceptorEventos extends Thread {
-    // A RELLENAR el nombre de la cola de RabbitMQ
-    private final static String NOMBRE_COLA_RABBIT; | // A RELLENAR
+    private static final String NOMBRE_COLA_RABBIT = "juanfranciscoMM";
     private ArrayBlockingQueue<String> qevent;
 
     // El constructor recibe una referencia a las colas bloqueantes
     // que le permiten comunicarse con los hilos Clasificador
-    public ReceptorEventos(ArrayBlockingQueue<String> qevent){
+    public ReceptorEventos(ArrayBlockingQueue<String> qevent) {
         this.qevent = qevent;
     }
 
     // La función run es la que se ejecuta al poner en marcha el hilo
+    @Override
     public void run() {
         // Conectar con rabbitMQ
-        // A RELLENAR
-        |
-        |
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
         try {
             Connection connection = factory.newConnection();
             Channel channel = connection.createChannel();
@@ -66,17 +65,17 @@ class ReceptorEventos extends Thread {
                     // ************************************************************
 
                     // Convertir en cadena el mensaje recibido
-                    String evtmsg = new String(body, "UTF-8");
+                    String evtmsg = new String(body, StandardCharsets.UTF_8);
                     System.out.println("ReceptorEventos: Recibido mensaje = " + evtmsg);
-                    // A RELLENAR (enviar mensaje a cola interna bloqueante)
-                    |
-                    |
-                    |
-                    |
+
+                    // Enviar mensaje a cola interna bloqueante
+                    qevent.put(evtmsg);
                 }
             };
             System.out.println("ReceptorEventos. Esperando llegada de eventos");
             channel.basicConsume(NOMBRE_COLA_RABBIT, true, consumer);
+            channel.close();
+            connection.close();
         } catch (Exception e) {  // No manejamos excepciones, simplemente abortamos
             e.printStackTrace();
             System.exit(7);
@@ -87,7 +86,7 @@ class ReceptorEventos extends Thread {
 // Clase Clasificador espera en una cola bloqueante a que el hilo ReceptorEventos le envíe
 // un evento para contabilizar y archivar.
 class Clasificador extends Thread {
-    private ContabilidadEventos actev; //Objeto que permite registrar el total de eventos por facilidad y nivel
+    private ContabilidadEventos actev; // Objeto que permite registrar el total de eventos por facilidad y nivel
     private ArrayBlockingQueue<String> cola;  // Cola bloqueante en que los eventos a clasificar y contabilizar
     private String[] fac_names;    // Nombres de las facilidades u origenes de eventos
     private String[] level_names;  // Nombres de los niveles de severidad de los eventos
@@ -107,23 +106,34 @@ class Clasificador extends Thread {
     }
 
     // El método run es el que se ejecuta al arrancar el hilo
+    @Override
     public void run() {
         try {
             while (true) {  // Bucle infinito
-                // A RELLENAR (esperar evento en la cola bloqueante, extraer mensaje, procesarlo y contabilizarlo)
+                // Esperar evento en la cola bloqueante, extraer mensaje, procesarlo y contabilizarlo
                 // Si se produce un error al tokenizar el mensaje, se emite un mensaje de error y se ignora
-                // Si se puede tokenizar correctamente se escribe el mensaje de log en el fichero 
+                // Si se puede tokenizar correctamente se escribe el mensaje de log en el fichero
                 // correspondiente y en el formato especificado en el enunciado, y se contabiliza el evento
                 // a través de actev.
-                |
-                |
-                |
-                |
-                |
-                |
-                |
-                |
-                |
+                String evtmsg = cola.take();
+                System.out.println("Clasificador: Recibido mensaje = " + evtmsg);
+                String[] tokens = evtmsg.split(":");
+
+                if (tokens.length != 3) {
+                    System.out.println("Clasificador: Error en formato de mensaje");
+                    continue;
+                }
+
+                int fac = Integer.parseInt(tokens[0]);
+                int level = Integer.parseInt(tokens[1]);
+                String msg = tokens[2];
+                String date = new Date().toString();
+                String logmsg = String.format("%s:%s:%s:%s", fac_names[fac], level_names[level], date, msg);
+                System.out.println("Clasificador: " + logmsg);
+                FileWriter fw = new FileWriter(fac_file_names[fac], true);
+                fw.write(logmsg + "\n");
+                fw.close();
+                actev.contabiliza(fac, level);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -139,7 +149,7 @@ public class Sislog {
     // Función main por la que arranca el programa
     public static void main(String[] argv) throws Exception {
         // Arrays con nombres de facilidades, niveles y ficheros de registro
-        String[] facilities_names={
+        String[] facilities_names = {
             "kern",
             "user",
             "mail",
@@ -151,7 +161,8 @@ public class Sislog {
             "uucp",
             "cron"
         };
-        String[] level_names={
+
+        String[] level_names = {
             "emerg",
             "alert",
             "crit",
@@ -161,7 +172,8 @@ public class Sislog {
             "info",
             "debug"
         };
-        String[] facilities_file_names={
+
+        String[] facilities_file_names = {
             "fac00.dat",
             "fac01.dat",
             "fac02.dat",
@@ -173,11 +185,12 @@ public class Sislog {
             "fac08.dat",
             "fac09.dat"
         };
+
         // Los valores de estas variables se leen de línea de comandos
-        int max_facilidades=0;      // Maximo de origenes de alertas
-        int max_niveles=0;          // Maximo de niveles de severidad
-        int tam_cola=0;             // Tamaño de la array blocking queue
-        int num_workers=0;          // Numero de hilos trabajadores
+        int max_facilidades = 0;      // Maximo de origenes de alertas
+        int max_niveles = 0;          // Maximo de niveles de severidad
+        int tam_cola = 0;             // Tamaño de la array blocking queue
+        int num_workers = 0;          // Numero de hilos trabajadores
 
         // Cola interna de sincronización entre el hilo ReceptorPeticiones y los Worker
         ArrayBlockingQueue<String> cola_interna;
@@ -191,79 +204,71 @@ public class Sislog {
             System.out.println("Uso: Syslog max_facilidades max_niveles tam_cola num_workers");
             System.exit(1);
         }
+
         try {
             max_facilidades = Integer.parseInt(argv[0]);
             max_niveles = Integer.parseInt(argv[1]);
             tam_cola = Integer.parseInt(argv[2]);
             num_workers = Integer.parseInt(argv[3]);
-        } 
-        catch (NumberFormatException e) {
+        } catch (NumberFormatException e) {
             System.out.println("max_facilidades, max_niveles, tam_cola y numworkers deben ser enteros");
             System.exit(2);
         }
 
-        if ((max_facilidades<1) || (max_facilidades>facilities_names.length))
-        {
+        if ((max_facilidades < 1) || (max_facilidades > facilities_names.length)) {
             System.out.println("max_facilidades debe ser un valor >=1 y <="+facilities_names.length);
             System.exit(3);
         }
-        if ((max_niveles<1) || (max_niveles>level_names.length))
-        {
-            System.out.println("max_niveles debe ser un valor >=1 y <="+level_names.length);
+
+        if ((max_niveles < 1) || (max_niveles > level_names.length)) {
+            System.out.println("max_niveles debe ser un valor >=1 y <=" + level_names.length);
             System.exit(4);
         }
-        if (tam_cola<1)
-        {
+        if (tam_cola < 1) {
             System.out.println("tam_cola debe ser un valor >=1");
             System.exit(5);
         }
-        if (num_workers<1){
+
+        if (num_workers < 1) {
             System.out.println("num_workers debe ser un valor >=1");
             System.exit(6);
         }
 
         // Creamos el objeto que nos permite llevar la contabilidad de los eventos
-        // A RELLENAR
-        |
-        |
-        
-        // Creamos la cola interna de sincronización entre hilos
-        // A RELLENAR
-        |
-        |
+        ContabilidadEventos actev = new ContabilidadEventos(max_facilidades, max_niveles);
 
-        
+        // Creamos la cola interna de sincronización entre hilos
+        cola_interna = new ArrayBlockingQueue<>(tam_cola);
+
         // Manager de seguridad para RMI
         if (System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());
         }
-        
+
         try {
             // Arrancar el servidor RMI y registrar el objeto remoto que implementa la interfaz
-            // A RELLENAR
-            |
-            |
-            |
-            |
+            SislogImpl sislog = new SislogImpl(actev, facilities_names, level_names);
+            // Registrar el objeto remoto en el registro RMI
+            Naming.rebind("Sislog", sislog);
+
             System.out.println("Sislog registrado para RMI");
-        } 
-        catch (Exception e) {
+        } catch (Exception e) {
             // Cualquier excepción simplemente se imprime y se ignora
             System.out.println("Error al registrar el objeto RMI interfaz con el Syslog: " + e.getMessage());
             e.printStackTrace();
         }
+
         // Creamos los hilos clasificadores, guardamos sus referencias en un array y los arrancamos
         clasificadores = new Clasificador[num_workers];
-        // A RELLENAR
-        |
-        |
-        |
+        for (int i = 0; i < num_workers; i++) {
+            clasificadores[i] = new Clasificador(cola_interna, actev, facilities_names, level_names, facilities_file_names);
+            clasificadores[i].start();
+        }
 
         // Creamos el hilo receptor de eventos, almacenamos su referencia y lo arrancamos
-        // A RELLENAR
-        |
-        |
-        
+        receptor_eventos = new ReceptorEventos(cola_interna);
+        receptor_eventos.start();
+
         // Esperamos a que finalice el hilo receptor de eventos (nunca finalizará, hay que parar con Ctrl+C)
         receptor_eventos.join();
     }
