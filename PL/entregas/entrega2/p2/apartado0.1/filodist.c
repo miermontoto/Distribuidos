@@ -44,13 +44,13 @@ void alterarToken(unsigned char *tok, estado_filosofo nuevoestado);
 void* comunicaciones(void);
 void* esperarConexion(void);
 void check_error(int ret, char *msg);
-void check_error_val(int ret, char *msg, int ret_value);
+void check_error(int ret, char *msg, int ret_value);
 
 void check_error(int ret, char *msg) {
-	check_error_val(ret, msg, 1);
+	check_error(ret, msg, 1);
 }
 
-void check_error_val(int ret, char *msg, int ret_value) {
+void check_error(int ret, char *msg, int ret_value) {
 	if (ret < 0) {
 		fprintf(stderr, "Filosofo %d: %s(%s)\n", idfilo, msg, strerror(errno));
 		exit(ret_value);
@@ -65,17 +65,17 @@ int main(int argc, char *argv[]) {
 	inicializaciones();
 
 	// Lanzamiento del hilo de comunicaciones del filósofo
-	check_error_val(pthread_create(&h1, NULL, (void *)comunicaciones, (void *)NULL),
+	check_error(pthread_create(&h1, NULL, (void *)comunicaciones, (void *)NULL),
 		"Falló al lanzar el hilo de comuni", 10);
 
 	// Lanzamiento del hilo principal de funcionamiento del filósofo
-	check_error_val(pthread_create(&h2, NULL, (void *)filosofo, (void *)NULL),
+	check_error(pthread_create(&h2, NULL, (void *)filosofo, (void *)NULL),
 		"Falló al lanzar el hilo filosofo", 10);
 
 	// Sincronización con la terminación del hilo de comunicaciones y el
 	// hilo que ejecuta la función filósofo
-	check_error_val(pthread_join(h1, NULL), "pthread_join h1", 11);
-	check_error_val(pthread_join(h2, NULL), "pthread_join h2", 11);
+	check_error(pthread_join(h1, NULL), "pthread_join h1", 11);
+	check_error(pthread_join(h2, NULL), "pthread_join h2", 11);
 	return 0;
 }
 
@@ -138,8 +138,8 @@ void procesaLineaComandos(int numero, char *lista[]) {
 
 // Inicializa el mutex, la variable condicional y el estado del filósofo
 void inicializaciones(void) {
-	check_error_val(pthread_mutex_init(&mestado, NULL), "pthread_mutex_init", 14);
-	check_error_val(pthread_cond_init(&condestado, NULL), "pthread_cond_init", 14);
+	check_error(pthread_mutex_init(&mestado, NULL), "pthread_mutex_init", 14);
+	check_error(pthread_cond_init(&condestado, NULL), "pthread_cond_init", 14);
 	estado = no_sentado;
 }
 
@@ -171,26 +171,26 @@ void* filosofo(void) {
 
 // Sincronización con el cambio de estado a "comiendo"
 void esperarPalillos(void) {
-	check_error_val(pthread_mutex_lock(&mestado), "pthread_mutex_lock (esperarPalillos)", 15);
+	check_error(pthread_mutex_lock(&mestado), "pthread_mutex_lock (esperarPalillos)", 15);
 	while (estado != comiendo)
-		check_error_val(pthread_cond_wait(&condestado, &mestado), "pthread_cond_wait (esperarPalillos)", 15);
-	check_error_val(pthread_mutex_unlock(&mestado), "pthread_mutex_unlock (esperarPalillos)", 15);
+		check_error(pthread_cond_wait(&condestado, &mestado), "pthread_cond_wait (esperarPalillos)", 15);
+	check_error(pthread_mutex_unlock(&mestado), "pthread_mutex_unlock (esperarPalillos)", 15);
 }
 
 
 // Sincronización con el cambio de estado a "pensando"
 void soltarPalillos(void) {
-	check_error_val(pthread_mutex_lock(&mestado), "pthread_mutex_lock (soltarPalillos)", 16);
+	check_error(pthread_mutex_lock(&mestado), "pthread_mutex_lock (soltarPalillos)", 16);
 	while (estado != pensando)
-		check_error_val(pthread_cond_wait(&condestado, &mestado), "pthread_cond_wait (soltarPalillos)", 16);
-	check_error_val(pthread_mutex_unlock(&mestado), "pthread_mutex_unlock (soltarPalillos)", 16);
+		check_error(pthread_cond_wait(&condestado, &mestado), "pthread_cond_wait (soltarPalillos)", 16);
+	check_error(pthread_mutex_unlock(&mestado), "pthread_mutex_unlock (soltarPalillos)", 16);
 }
 
 
 void cambiarEstado(estado_filosofo nuevoestado) {
-	check_error_val(pthread_mutex_lock(&mestado), "pthread_mutex_lock (cambiarEstado)", 17);
+	check_error(pthread_mutex_lock(&mestado), "pthread_mutex_lock (cambiarEstado)", 17);
 	estado = nuevoestado;
-	check_error_val(pthread_mutex_unlock(&mestado), "pthread_mutex_unlock (cambiarEstado)", 17);
+	check_error(pthread_mutex_unlock(&mestado), "pthread_mutex_unlock (cambiarEstado)", 17);
 }
 
 
@@ -285,11 +285,11 @@ void *comunicaciones(void) {
 		);
 		exit(4);
 	}
-	check_error_val(listen(sockserver, SOMAXCONN), "Error en el listen", 18);
+	check_error(listen(sockserver, SOMAXCONN), "Error en el listen", 18);
 
 	// 2. Delay para permitir que el resto de procesos
 	// se lancen y lleguen a crear su socket servidor
-	check_error_val(sleep(delay), "Error en el sleep", 19);
+	check_error(sleep(delay), "Error en el sleep", 19);
 
 	// 3. Conectar con el siguiente
 	socknext = socket(AF_INET, SOCK_STREAM, 0);
@@ -345,23 +345,23 @@ void *comunicaciones(void) {
 				idfilo, ret
 			);
 		}
-		check_error_val(pthread_mutex_lock(&mestado), "Error en el lock", 19);
+		check_error(pthread_mutex_lock(&mestado), "Error en el lock", 19);
 		if (estado == queriendo_comer) {
 			// Alterar token cuando esten libres y avanzar
 			// cambiar estado a comiendo y señalar la condición
 			if (palillosLibres(token[1])) { // APARTADO 0.1
 				alterarToken(&token[1], comiendo); // APARTADO 0.1
 				estado = comiendo;
-				check_error_val(pthread_cond_signal(&condestado), "Error en el signal", 20);
+				check_error(pthread_cond_signal(&condestado), "Error en el signal", 20);
 			}
 		} else if (estado == dejando_comer) {
 			// Alterar token y avanzar
 			// Cambiar estado a pensando y señalar la condicion
 			alterarToken(&token[1], pensando); // APARTADO 0.1
 			estado = pensando;
-			check_error_val(pthread_cond_signal(&condestado), "Error en el signal", 20);
+			check_error(pthread_cond_signal(&condestado), "Error en el signal", 20);
 		}
-		check_error_val(pthread_mutex_unlock(&mestado), "Error en el unlock", 21);
+		check_error(pthread_mutex_unlock(&mestado), "Error en el unlock", 21);
 		if (ret == 2) { // APARTADO 0.1
 			ret = write(socknext, token, sizeof(char) * 2); // APARTADO 0.1
 			if (ret != 2) { // APARTADO 0.1

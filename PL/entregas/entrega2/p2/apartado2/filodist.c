@@ -29,7 +29,7 @@ int cuchara; // APARTADO 1: almacena la cuchara que sostiene el filósofo cuando
 estado_filosofo estado;
 pthread_mutex_t mestado; // Mutex que protege las modificaciones al valor del estado del filosofo
 
-// variable condicional que permite suspender al filosofo
+// Variable condicional que permite suspender al filosofo
 // hasta que se produce el cambio de estado efectivo
 pthread_cond_t condestado;
 
@@ -44,7 +44,6 @@ char palillosLibres(unsigned char token);
 void alterarToken(unsigned char *tok, estado_filosofo nuevoestado);
 void* comunicaciones(void);
 void* esperarConexion(void);
-void check_error(int ret, char *msg);
 void check_error(int ret, char *msg, int ret_value);
 void printlog(char* msg); // APARTADO 0.2
 char* estado2str(estado_filosofo estado); // APARTADO 0.2
@@ -102,14 +101,13 @@ char* estado2str(estado_filosofo estado) { // APARTADO 0.2
 			return "DEJANDO_CONDIMENTAR";
 		case hablando: // APARTADO 1
 			return "HABLANDO";
+		case esperando_irse: // APARTADO 2
+			return "ESPERANDO_IRSE";
+		case levantado: // APARTADO 2
+			return "LEVANTADO";
 		default:
 			return "UNKNOWN";
 	}
-}
-
-
-void check_error(int ret, char *msg) {
-	check_error(ret, msg, 1);
 }
 
 
@@ -131,7 +129,7 @@ int main(int argc, char *argv[]) {
 
 	// Lanzamiento del hilo de comunicaciones del filósofo
 	check_error(pthread_create(&h1, NULL, (void *)comunicaciones, (void *)NULL),
-		"Falló al lanzar el hilo de comuni", 10);
+		"Falló al lanzar el hilo de comunicaciones", 10);
 
 	// Lanzamiento del hilo principal de funcionamiento del filósofo
 	check_error(pthread_create(&h2, NULL, (void *)filosofo, (void *)NULL),
@@ -141,6 +139,7 @@ int main(int argc, char *argv[]) {
 	// hilo que ejecuta la función filósofo
 	check_error(pthread_join(h1, NULL), "pthread_join h1", 11);
 	check_error(pthread_join(h2, NULL), "pthread_join h2", 11);
+
 	return 0;
 }
 
@@ -227,6 +226,8 @@ void* filosofo(void) {
 	char msg[1024]; // APARTADO 0.2
 
 	while (numbocados < MAX_BOCADOS) {
+		sprintf(msg, "Ronda %d/%d", numbocados+1, MAX_BOCADOS);
+		printlog(msg);
 		cambiarEstado(queriendo_condimentar);
 		sprintf(msg, "Cambiando estado a queriendo condimentar"); // APARTADO 1
 		printlog(msg); // APARTADO 1
@@ -234,12 +235,12 @@ void* filosofo(void) {
 		// condimentando
 		sprintf(msg, "Cambiando estado a condimentando"); // APARTADO 1
 		printlog(msg); // APARTADO 1
-		sleep(5);
+		sleep(1);
 		cambiarEstado(dejando_condimentar);
 		soltarCuchara();
-		sprintf(msg, "Cambiando estado a pensando"); // APARTADO 1
+		sprintf(msg, "Cambiando estado a hablando"); // APARTADO 1
 		printlog(msg); // APARTADO 1
-		sleep(10);
+		sleep(2);
 		cambiarEstado(queriendo_comer);
 		sprintf(msg, "Cambiando estado a queriendo comer"); // APARTADO 0.2
 		printlog(msg); // APARTADO 0.2
@@ -247,14 +248,16 @@ void* filosofo(void) {
 		// comiendo
 		sprintf(msg, "Cambiando estado a comiendo"); // APARTADO 0.2
 		printlog(msg); // APARTADO 0.2
-		sleep(5);
+		sleep(3);
 		numbocados++;
 		cambiarEstado(dejando_comer);
 		soltarPalillos();
 		sprintf(msg, "Cambiando estado a pensando"); // APARTADO 0.2
 		printlog(msg); // APARTADO 0.2
-		sleep(10);
+		sleep(2);
 	}
+
+	cambiarEstado(levantado);
 	sprintf(msg, "Levantandose de la mesa"); // APARTADO 0.2
 	printlog(msg); // APARTADO 0.2
 
@@ -342,14 +345,10 @@ char palillosLibres(unsigned char token) {
 */
 int cucharaLibre(unsigned char tok) { // APARTADO 1
 	switch(tok >> 6) {
-		case 0:
-			return 1;
-		case 1:
-			return 2;
-		case 2:
-			return 1;
-		case 3:
-			return 0;
+		case 0b00: return 1;
+		case 0b01: return 2;
+		case 0b10: return 1;
+		case 0b11: return 0;
 	}
 }
 
@@ -387,11 +386,14 @@ void alterarToken(unsigned char *tok, estado_filosofo nuevoestado) {
 			*tok = ~tokenaux;
 			break;
 		case condimentando: // APARTADO 1
-			cuchara = cucharaLibre(*tok);
+			cuchara = cucharaLibre(*tok); // Se almacena la cuchara que se va a usar
 			*tok = *tok | (1 << (5 + cuchara));
 			break;
 		case hablando: // APARTADO 1
-			*tok = *tok & (0 << (5 + cuchara));
+			*tok = *tok - (1 << (5 + cuchara));
+			break;
+		case esperando_irse: // APARTADO 2
+			*tok = *tok + 1;
 			break;
 		default:;
 	}
@@ -459,7 +461,7 @@ void *comunicaciones(void) {
 	printlog(msg); // APARTADO 0.2
 
 	// Si se llega a este punto el ciclo está completo
-	// 5. Si filósofo = 0, inyectar token.
+	// 5. Si filósofo = ', inyectar token.
 	if (idfilo == 0) {
 		write(socknext, token, (size_t) sizeof(unsigned char) * 2); // APARTADO 0.1
 	}
@@ -474,8 +476,10 @@ void *comunicaciones(void) {
 			);
 			printlog(msg); // APARTADO 0.2
 		}
-		memcpy(old_token, token, sizeof(unsigned char) * 2); // APARTADO 0.2
+
 		check_error(pthread_mutex_lock(&mestado), "Error en el lock", 19);
+		memcpy(old_token, token, sizeof(unsigned char) * 2); // APARTADO 0.2
+
 		if (estado == queriendo_comer) {
 			// Alterar token cuando esten libres y avanzar
 			// cambiar estado a comiendo y señalar la condición
@@ -500,7 +504,18 @@ void *comunicaciones(void) {
 			alterarToken(&token[0], hablando); // APARTADO 0.1
 			estado = hablando;
 			check_error(pthread_cond_signal(&condestado), "Error en el signal", 20);
+		} else if (estado == levantado) { // APARTADO 2
+			alterarToken(&token[0], esperando_irse);
+			estado = esperando_irse;
+			check_error(pthread_cond_signal(&condestado), "Error en el signal", 20);
 		}
+
+		if (estado == esperando_irse && idfilo == 0 && (token[0] & 0b00000111) == 0b00000111) { // APARTADO 2
+			sprintf(msg, "Enviando token especial de finalización");
+			printlog(msg);
+			token[0] = 0b11111111;
+		}
+
 		check_error(pthread_mutex_unlock(&mestado), "Error en el unlock", 21);
 		if (ret == 2) { // APARTADO 0.1
 			ret = write(socknext, token, sizeof(char) * 2); // APARTADO 0.1
@@ -513,6 +528,13 @@ void *comunicaciones(void) {
 			if(memcmp(token, old_token, sizeof(unsigned char) * 2) != 0) { // APARTADO 0.2
 				print_token(token, estado);
 			}
+
+			if (token[0] == 0b11111111) { // APARTADO 2
+				sprintf(msg, "Saliendo");
+				printlog(msg);
+				exit(EXIT_SUCCESS);
+			}
 		}
+		usleep(1000);
 	}
 }
