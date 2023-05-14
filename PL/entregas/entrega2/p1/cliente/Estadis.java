@@ -44,7 +44,7 @@ public class Estadis {
                 // Seguidamente se itera por cada columna (nivel) y se obtiene por RMI el valor del
                 // contador correspodiente a la facilidad y nivel actual (fila y columna)
                 for (int j = 0; j < ncols; j++) {
-                    n = evtserv.obtenerValorFacilidadNivel(j, i);
+                    n = evtserv.obtenerValorFacilidadNivel(i, j);
 
                     System.out.print(n+"\t");
                     suma += n;
@@ -59,7 +59,7 @@ public class Estadis {
             for (int j = 0; j < ncols; j++) {
                 suma = 0; // Para computar el total por columnas
                 for (int i = 0; i < nfils; i++) {
-                    suma += evtserv.obtenerValorFacilidadNivel(j, i);
+                    suma += evtserv.obtenerValorFacilidadNivel(i, j);
                 }
                 System.out.print(suma+"\t");
                 total += suma;

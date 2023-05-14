@@ -510,7 +510,7 @@ void *comunicaciones(void) {
 			check_error(pthread_cond_signal(&condestado), "Error en el signal", 20);
 		}
 
-		if (estado == esperando_irse && idfilo == 0 && (token[0] & 0b00000111) == 0b00000111) { // APARTADO 2
+		if (idfilo == 0 && (token[0] & 0b00000111) == 0b00000111) { // APARTADO 2
 			sprintf(msg, "Enviando token especial de finalización");
 			printlog(msg);
 			token[0] = 0b11111111;

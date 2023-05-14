@@ -227,8 +227,11 @@ public class Sislog {
             System.exit(5);
         }
 
-        if (num_workers < 1) {
-            System.out.println("num_workers debe ser un valor >=1");
+        // Se controla que el número de hilos no supere los 10000 para
+        // evitar OutOfMemoryException, aunque puede ocurrir igualmente
+        // dependiendo del sistema.
+        if (num_workers < 1 || num_workers > 10000) {
+            System.out.println("num_workers debe ser un valor >=1 y <=10000");
             System.exit(6);
         }
 
