@@ -172,14 +172,14 @@ void procesaLineaComandos(int numero, char *lista[]) {
 			exit(2);
 		}
 
-		if(delay == 0) {
-			sprintf(msg, "El delay de conexion debe ser >0 o error en atoi"); // APARTADO 0.2
+		if(delay <= 0) {
+			sprintf(msg, "El delay de conexión debe ser >0 o error en atoi"); // APARTADO 0.2
 			printlog(msg); // APARTADO 0.2
 			exit(12);
 		}
 
 		if((idfilo < 0) || (idfilo >= numfilo)) {
-			sprintf(msg, "El id del filosofo debe ser >=0 y <numfilo"); // APARTADO 0.2
+			sprintf(msg, "El id del filósofo debe ser >=0 y <numfilo"); // APARTADO 0.2
 			printlog(msg); // APARTADO 0.2
 			exit(3);
 		}

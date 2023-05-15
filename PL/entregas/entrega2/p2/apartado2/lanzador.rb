@@ -18,8 +18,8 @@ if ARGV.length >= 2 && ARGV.length <= 0 then
 	exit
 end
 
-system("killall filodist 2> /dev/null")
-system("make all > /dev/null")
+system("killall filodist &>/dev/null")
+system("make all -B &>/dev/null")
 num = ARGV.length >= 1 ? ARGV[0].to_i : 7
 delay = ARGV.length == 2 ? ARGV[1].to_i : 1
 used_ports = `netstat -tulpn 2> /dev/null | grep tcp | awk '{print $4}' | awk -F: '{print $2}'`.split("\n").map(&:to_i)

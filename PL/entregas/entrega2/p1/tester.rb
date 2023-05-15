@@ -20,6 +20,7 @@ def lc
 	return "java -cp clases:clases/rabbitmq-client.jar -Djava.security.policy=policy sislog.Sislog"
 end
 
+
 def le
 	result = `java -cp clases:clases/rabbitmq-client.jar -Djava.security.policy=policy cliente.Estadis`
 	if $?.exitstatus != 0 then
@@ -29,6 +30,7 @@ def le
 	end
 	result.split("\n").last.split(" ").last.to_i
 end
+
 
 def lc_run(args, err)
 	t = Thread.new {system("#{lc} #{args} &>/dev/null")}
@@ -42,7 +44,8 @@ def lc_run(args, err)
 	end
 end
 
-system("killall rmiregistry 2>/dev/null")
+
+system("killall rmiregistry 2>/dev/null") # Matar el registro si ya está activo
 
 # Comprobar que el fichero "policy" existe
 print "policy\t\t"
