@@ -65,6 +65,8 @@ class ReceptorEventos extends Thread {
                     System.out.println("ReceptorEventos: Recibido mensaje = " + evtmsg);
 
                     // Enviar mensaje a cola interna bloqueante
+                    // Se utiliza put en lugar de add para que la cola interna se bloquee
+                    // y no se pierdan mensajes si la cola está llena.
                     try {
                         qevent.put(evtmsg);
                         System.out.println("ReceptorEventos: Mensaje enviado a cola interna");
@@ -93,10 +95,10 @@ class Clasificador extends Thread {
 
     // El constructor recibe la cola y los arrays de cadenas con nombres de facilidades, niveles y ficheros
     public Clasificador(ContabilidadEventos actev,
-                        ArrayBlockingQueue<String> cola,
-                        String[] fac_names,
-                        String[] level_names,
-                        String[] fac_file_names) {
+            ArrayBlockingQueue<String> cola,
+            String[] fac_names,
+            String[] level_names,
+            String[] fac_file_names) {
         this.actev = actev;
         this.cola = cola;
         this.fac_names = fac_names;
@@ -249,6 +251,7 @@ public class Sislog {
         try {
             // Arrancar el servidor RMI y registrar el objeto remoto que implementa la interfaz
             SislogImpl sislog = new SislogImpl(actev, facilities_names, level_names);
+
             // Registrar el objeto remoto en el registro RMI
             Naming.rebind("Sislog", sislog);
 
