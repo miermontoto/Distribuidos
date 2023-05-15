@@ -21,7 +21,7 @@ public class Estadis {
         // Parte principal, toda dentro de un try para capturar cualquier excepción
         try {
             // Obtener por RMI el número de niveles (ncols) y facilidades (nfils)
-            evtserv = (SislogInterface) Naming.lookup("Sislog");
+            evtserv = (SislogInterface) Naming.lookup("SislogImpl");
             nfils = evtserv.obtenerNumeroFacilidades();
             ncols = evtserv.obtenerNumeroNiveles();
 

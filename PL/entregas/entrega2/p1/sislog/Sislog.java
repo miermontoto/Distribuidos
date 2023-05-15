@@ -253,7 +253,7 @@ public class Sislog {
             SislogImpl sislog = new SislogImpl(actev, facilities_names, level_names);
 
             // Registrar el objeto remoto en el registro RMI
-            Naming.rebind("Sislog", sislog);
+            Naming.rebind("SislogImpl", sislog);
 
             System.out.println("Sislog registrado para RMI");
         } catch (Exception e) {
