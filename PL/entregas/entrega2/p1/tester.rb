@@ -46,6 +46,7 @@ end
 
 
 system("killall rmiregistry 2>/dev/null") # Matar el registro si ya está activo
+system("rm *.dat 2>/dev/null") # Borrar los ficheros de estadísticas
 
 # Comprobar que el fichero "policy" existe
 print "policy\t\t"
@@ -83,7 +84,7 @@ print "lanzar_sislog\t"
 lc_run("", "sin argumentos")
 lc_run("10 8 9", "3 argumentos")
 lc_run("10 8 9 10 10", "5 argumentos")
-lc_run("11 8 10 10", "num_facilidades > 10")
+lc_run("11 8 10 10", "num_facilidad'es > 10")
 lc_run("10 9 10 10", "num_niveles > 8")
 lc_run("10 8 0 10", "tam_cola = 0")
 lc_run("10 8 10 0", "num_workers = 0")
@@ -112,13 +113,24 @@ end
 puts "OK".green
 t.kill
 
+print "file test\t"
+if (1..7).any? { |i| !File.exist?("fac0#{i}.dat") } then
+	puts "FAIL".red
+	abort
+end
+puts "OK".green
+
+system("rm *.dat 2>/dev/null")
+system("killall java &>/dev/null")
+
 if !File.exist?("generator.rb") then; exit; end
 print "heavy test\t"
 t = Thread.new { system("#{lc} 10 8 100 100 &>/dev/null") }
 sleep(1)
 result = `ruby generator.rb 10 8 10`.split("\n").last.split(" ").last.to_i
-if result != 50000 then
+if result != 100000 || (0..9).any? { |i| !File.exist?("fac0#{i}.dat")} then
 	print "FAIL".red
 	puts " (#{result})"
 	abort
 end
+puts "OK".green

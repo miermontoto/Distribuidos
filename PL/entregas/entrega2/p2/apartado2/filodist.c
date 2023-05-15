@@ -463,7 +463,13 @@ void *comunicaciones(void) {
 	// Si se llega a este punto el ciclo está completo
 	// 5. Si filósofo = 0, inyectar token.
 	if (idfilo == 0) {
-		write(socknext, token, (size_t) sizeof(unsigned char) * 2); // APARTADO 0.1
+		if(write(socknext, token, (size_t) sizeof(unsigned char) * 2) < 0) {
+			sprintf(msg, "Error de escritura " // APARTADO 0.2
+				"en el socket de conexion con el siguiente nodo (Ret=%d)",
+				idfilo, ret
+			);
+			printlog(msg); // APARTADO 0.2
+		} // APARTADO 0.1
 	}
 
 	while (1) {
