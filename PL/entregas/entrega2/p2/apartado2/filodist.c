@@ -461,7 +461,7 @@ void *comunicaciones(void) {
 	printlog(msg); // APARTADO 0.2
 
 	// Si se llega a este punto el ciclo está completo
-	// 5. Si filósofo = ', inyectar token.
+	// 5. Si filósofo = 0, inyectar token.
 	if (idfilo == 0) {
 		write(socknext, token, (size_t) sizeof(unsigned char) * 2); // APARTADO 0.1
 	}

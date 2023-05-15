@@ -58,16 +58,18 @@ public class Cliente {
     //
     // Una vez finaliza de leer todos los mensajes y enviarlos a la cola, termina
     static void enviar_eventos(Channel channel, String fich_evt) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(fich_evt));
-        try {
+
+        try (BufferedReader br = new BufferedReader(new FileReader(fich_evt));) {
             // Leer todas las líneas del fichero y enviarlas como mensajes
             String linea;
             while ((linea = br.readLine()) != null) {
                 channel.basicPublish("", NOMBRE_COLA, null, linea.getBytes(StandardCharsets.UTF_8));
             }
             br.close();
+        } catch (java.io.FileNotFoundException fnfe) {
+            System.err.println("Error: Fichero no encontrado: " + fich_evt);
+            System.exit(10);
         } catch (Exception e) {
-            br.close();
             throw e;
         }
     }

@@ -1,7 +1,7 @@
 #!/bin/bash
 if [ "$#" -ne 4 ]; then
     echo "Forma de uso: $0 <num_facilidades> <num_niveles> <tam_cola> <num_workers>"
-    exit
+    exit 1
 fi
 echo "Lanzando el sislog"
 java -cp clases:clases/rabbitmq-client.jar -Djava.security.policy=policy sislog.Sislog $1 $2 $3 $4

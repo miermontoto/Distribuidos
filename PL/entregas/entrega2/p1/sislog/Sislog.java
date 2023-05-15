@@ -198,7 +198,7 @@ public class Sislog {
         Clasificador[] clasificadores;
 
         // Lectura de la línea de comandos
-        if (argv.length < 4) {
+        if (argv.length != 4) {
             System.out.println("Uso: Syslog max_facilidades max_niveles tam_cola num_workers");
             System.exit(1);
         }

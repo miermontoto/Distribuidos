@@ -1,68 +1,121 @@
-require "faker"
+# Archivo que comprueba todas las entradas de todas las partes
+# del programa.
 
-# Script que genera un archivo de texto siguiendo el formato
-# especificado en el enunciado de la práctica. El objetivo es
-# generar eventos aleatorios en un archivo de texto y utilizar
-# el programa "cliente" para enviarlos al servidor rpc.
+# Orden de ejecución:
+# 1. lanzar_registro
+# 2. lanzar_sislog <num_facilidades> <num_niveles> <tam_cola> <num_workers>
+# 3. ruby tester.rb <num_facilidades> <num_niveles> <num_clientes> <num_eventos>
 
-# Ejecución:
-# $ gem install faker
-# $ ruby tester.rb <max_facilidad> <max_nivel> [num_eventos] [num_threads]
+# num_facilidades máximo: 10
+# num_niveles máximo: 8
+# num_workers máximo: 10000
 
-# La estructura de un evento es la siguiente:
-# <facilidad>:<nivel>:<mensaje>
-# Donde la facilidad y nivel son enteros y el mensaje es una cadena.
-#
-# MAXFACILITIES = 10
-# MAXLEVELS = 8
-#
-# Ejemplo:
-# 1:3:Prueba
+# Se han de comprobar todos los parámetros de entrada
+# Se ha de comprobar que el servicio `rabbitmq-server` está activo
 
-def generate_event(max_facilidad = 10, max_nivel = 8)
-	facilidad = rand(0..max_facilidad - 1)
-	nivel = rand(0..max_nivel - 1)
-	mensaje = Faker::Lorem.sentence
-	return "#{facilidad}:#{nivel}:#{mensaje}"
+require "colorize"
+
+
+def lc
+	return "java -cp clases:clases/rabbitmq-client.jar -Djava.security.policy=policy sislog.Sislog"
 end
 
-def generate_file(filename, n, max_facilidad, max_nivel)
-	File.open(filename, "w") do |f|
-		n.times do
-			f.puts(generate_event(max_facilidad, max_nivel))
-		end
+def le
+	result = `java -cp clases:clases/rabbitmq-client.jar -Djava.security.policy=policy cliente.Estadis`
+	if $?.exitstatus != 0 then
+		print "FAIL".red
+		puts " (estadis)"
+		abort
+	end
+	result.split("\n").last.split(" ").last.to_i
+end
+
+def lc_run(args, err)
+	t = Thread.new {system("#{lc} #{args} &>/dev/null")}
+
+	# Después de 1 décima, comprobar si el hilo sigue activo y matarlo si es así
+	sleep(0.1)
+	if t.alive? then
+		print "FAIL".red
+		puts " (#{err})"
+		abort
 	end
 end
 
+system("killall rmiregistry 2>/dev/null")
 
-if ARGV.length < 3 or ARGV.length > 4
-	puts "Usage: ruby tester.rb <max_facilidad> <max_nivel> <num_clientes> [num_eventos]"
-	exit
+# Comprobar que el fichero "policy" existe
+print "policy\t\t"
+if !File.exist? "policy" then
+	puts "FAIL".red
+	abort
 end
+puts "OK".green
 
-maxf = ARGV[0].to_i
-maxn = ARGV[1].to_i
-clientes = ARGV[2].to_i
-eventos = ARGV.length == 4 ? ARGV[3].to_i : 10000
-
-if maxf > 10 or maxn > 8 or maxf < 1 or maxn < 1
-	puts "Error: max_facilidad y max_nivel deben ser enteros entre 1 y 10"
-	exit
+print "rabbitmq-server\t"
+rabbitmq = `systemctl status rabbitmq-server`
+if !rabbitmq.include? "running" then
+	system("sudo systemctl start rabbitmq-server")
+	if $?.exitstatus != 0 then
+		puts "FAIL".red
+		abort
+	end
 end
+puts "OK".green
 
-if eventos < 1 or clientes < 1
-	puts "Error: num_eventos y clientes deben ser enteros mayores que 0"
-	exit
+print "compilar\t"
+msg = `./compilar 2>/dev/null | wc -l`
+if msg.to_i != 6 then
+	puts "FAIL".red
+	abort
 end
+puts "OK".green
+001
+print "lanzar_registro\t"
+system("CLASSPATH=clases rmiregistry & 2>/dev/null")
+puts $?.exitstatus == 0 ? "OK".green : "FAIL".red
 
-file = "rand.txt"
+print "lanzar_sislog\t"
 
-for i in 1..clientes
-	time = Time.now
-	print "Cliente #{i} [  ]"
-	generate_file(file, eventos, maxf, maxn)
-	`./lanzar_cliente rand.txt`
-	puts "\rCliente #{i} [OK] (#{Time.now - time}s)"
+lc_run("", "sin argumentos")
+lc_run("10 8 9", "3 argumentos")
+lc_run("10 8 9 10 10", "5 argumentos")
+lc_run("11 8 10 10", "num_facilidades > 10")
+lc_run("10 9 10 10", "num_niveles > 8")
+lc_run("10 8 0 10", "tam_cola = 0")
+lc_run("10 8 10 0", "num_workers = 0")
+#lc_run("10 8 10 10001", "num_workers > 10000")
+
+puts "OK".green
+system("killall java &>/dev/null")
+
+print "lanzar_cliente\t"
+t = Thread.new { system("#{lc} 10 8 10 10 &>/dev/null") }
+sleep(1)
+system("java -cp clases:clases/rabbitmq-client.jar -Djava.security.policy=policy cliente.Cliente eventos.txt &>/dev/null")
+if $?.exitstatus != 0 then
+	puts "FAIL".red
+	abort
 end
+puts "OK".green
 
-puts `./lanzar_estadis`
+print "lanzar_estadis\t"
+result = le
+if result != 7 then
+	print "FAIL".red
+	puts " (#{result})"
+	abort
+end
+puts "OK".green
+t.kill
+
+if !File.exist?("generator.rb") then; exit; end
+print "heavy test\t"
+t = Thread.new { system("#{lc} 10 8 100 100 &>/dev/null") }
+sleep(1)
+result = `ruby generator.rb 10 8 10`.split("\n").last.split(" ").last.to_i
+if result != 50000 then
+	print "FAIL".red
+	puts " (#{result})"
+	abort
+end
