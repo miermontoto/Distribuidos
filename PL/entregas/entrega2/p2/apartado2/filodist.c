@@ -114,7 +114,7 @@ char* estado2str(estado_filosofo estado) { // APARTADO 0.2
 void check_error(int ret, char *msg, int ret_value) {
 	if (ret < 0) {
 		char msg_err[256]; // APARTADO 0.2
-		sprintf(msg_err, "%s(%s)", idfilo, msg, strerror(errno)); // APARTADO 0.2
+		sprintf(msg_err, "%s(%s)", msg, strerror(errno)); // APARTADO 0.2
 		printlog(msg_err); // APARTADO 0.2
 		exit(ret_value);
 	}
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
 // Procesa la linea de comandos, almacena los valores leidos en variables
 // globales e imprime los valores leidos
 void procesaLineaComandos(int numero, char *lista[]) {
-	char* msg[1024]; // APARTADO 0.2
+	char msg[1024]; // APARTADO 0.2
 	if (numero != 7) {
 		sprintf(msg, "Forma de uso: %s id_filosofo num_filosofos " // APARTADO 0.2
 			"ip_siguiente puerto_siguiente "
@@ -349,6 +349,7 @@ int cucharaLibre(unsigned char tok) { // APARTADO 1
 		case 0b01: return 2;
 		case 0b10: return 1;
 		case 0b11: return 0;
+		default: return -1;
 	}
 }
 
@@ -411,7 +412,7 @@ void *comunicaciones(void) {
 	int socknext;
 	struct sockaddr_in servidor, anterior;
 	int anterior_len;
-	char* msg[1024]; // APARTADO 0.2
+	char msg[1024]; // APARTADO 0.2
 
 	// 1. Crear socket de comunicación con el y listen
 	sockserver = socket(AF_INET, SOCK_STREAM, 0);
@@ -465,9 +466,7 @@ void *comunicaciones(void) {
 	if (idfilo == 0) {
 		if(write(socknext, token, (size_t) sizeof(unsigned char) * 2) < 0) {
 			sprintf(msg, "Error de escritura " // APARTADO 0.2
-				"en el socket de conexion con el siguiente nodo (Ret=%d)",
-				idfilo, ret
-			);
+				"en el socket de conexion con el siguiente nodo");
 			printlog(msg); // APARTADO 0.2
 		} // APARTADO 0.1
 	}
@@ -478,7 +477,7 @@ void *comunicaciones(void) {
 		if (ret != 2) { // APARTADO 0.1
 			sprintf(msg, "Error de lectura " // APARTADO 0.2
 				"en el socket de conexion con el anterior nodo (Ret=%d)",
-				idfilo, ret
+				ret
 			);
 			printlog(msg); // APARTADO 0.2
 		}
